@@ -37,54 +37,63 @@ yum install -y mongodb-org 2>/dev/null
 echo "finished"
 
 
-echo "Creating Shard and ConfigServer files and directories..."
-mkdir -p  /var/run/mongodb-shard/ /var/lib/mongo-shard/ /var/log/mongodb-shard/
-mkdir -p  /var/run/mongodb-configsvr/ /var/lib/mongo-configsvr/ /var/log/mongodb-configsvr/
+#echo "Creating Shard and ConfigServer files and directories..."
+#mkdir -p  /var/run/mongodb-shard/ /var/lib/mongo-shard/ /var/log/mongodb-shard/
+#mkdir -p  /var/run/mongodb-configsvr/ /var/lib/mongo-configsvr/ /var/log/mongodb-configsvr/
 
-chown mongod:mongod /var/run/mongodb-shard/ \
-                    /var/lib/mongo-shard/ \
-                    /var/log/mongodb-shard/ \
-                    /var/run/mongodb-configsvr/ \
-                    /var/lib/mongo-configsvr/ \
-                    /var/log/mongodb-configsvr/
+#chown mongod:mongod /var/run/mongodb-shard/ \
+#                    /var/lib/mongo-shard/ \
+#                    /var/log/mongodb-shard/ \
+#                    /var/run/mongodb-configsvr/ \
+#                    /var/lib/mongo-configsvr/ \
+#                    /var/log/mongodb-configsvr/
 
 ## Copying SystemD's Services for Sharding and ConfigServer
 
-cp ${SYSTEM}/mongod.service  ${ETCSYSTEM}/mongod-shard.service
-cp ${SYSTEM}/mongod.service  ${ETCSYSTEM}/mongod-configsvr.service
+#cp ${SYSTEM}/mongod.service  ${ETCSYSTEM}/mongod-shard.service
+#cp ${SYSTEM}/mongod.service  ${ETCSYSTEM}/mongod-configsvr.service
 
-sed -i 's/\/var\/run\/mongodb/\/var\/run\/mongodb-shard/g' ${ETCSYSTEM}/mongod-shard.service
-sed -i 's/\/var\/lib\/mongo/\/var\/lib\/mongo-shard/g' ${ETCSYSTEM}/mongod-shard.service
-sed -i 's/\/var\/log\/mongodb/\/var\/log\/mongodb-shard/g' ${ETCSYSTEM}/mongod-shard.service
-sed -i 's/\/etc\/mongod.conf/\/etc\/mongod-shard.conf/g' ${ETCSYSTEM}/mongod-shard.service
-
-sed -i 's/\/var\/run\/mongodb/\/var\/run\/mongodb-configsvr/g' ${ETCSYSTEM}/mongod-configsvr.service
-sed -i 's/\/var\/lib\/mongo/\/var\/lib\/mongo-configsvr/g' ${ETCSYSTEM}/mongod-configsvr.service
-sed -i 's/\/var\/log\/mongodb/\/var\/log\/mongodb-configsvr/g' ${ETCSYSTEM}/mongod-configsvr.service
-sed -i 's/\/etc\/mongod.conf/\/etc\/mongod-configsvr.conf/g' ${ETCSYSTEM}/mongod-configsvr.service
+#sed -i 's/\/var\/run\/mongodb/\/var\/run\/mongodb-shard/g' ${ETCSYSTEM}/mongod-shard.service
+#sed -i 's/\/var\/lib\/mongo/\/var\/lib\/mongo-shard/g' ${ETCSYSTEM}/mongod-shard.service
+#sed -i 's/\/var\/log\/mongodb/\/var\/log\/mongodb-shard/g' ${ETCSYSTEM}/mongod-shard.service
+#sed -i 's/\/etc\/mongod.conf/\/etc\/mongod-shard.conf/g' ${ETCSYSTEM}/mongod-shard.service
+#
+#sed -i 's/\/var\/run\/mongodb/\/var\/run\/mongodb-configsvr/g' ${ETCSYSTEM}/mongod-configsvr.service
+#sed -i 's/\/var\/lib\/mongo/\/var\/lib\/mongo-configsvr/g' ${ETCSYSTEM}/mongod-configsvr.service
+#sed -i 's/\/var\/log\/mongodb/\/var\/log\/mongodb-configsvr/g' ${ETCSYSTEM}/mongod-configsvr.service
+#sed -i 's/\/etc\/mongod.conf/\/etc\/mongod-configsvr.conf/g' ${ETCSYSTEM}/mongod-configsvr.service
 
 ## Copying configuration file
 
-cp ${ETC}/mongod.conf ${ETC}/mongod-configsvr.conf
-cp ${ETC}/mongod.conf ${ETC}/mongod-shard.conf
-
-sed -i 's/\/var\/run\/mongodb/\/var\/run\/mongodb-shard/g' ${ETC}/mongod-shard.conf
-sed -i 's/\/var\/lib\/mongo/\/var\/lib\/mongo-shard/g' ${ETC}/mongod-shard.conf
-sed -i 's/\/var\/log\/mongodb/\/var\/log\/mongodb-shard/g' ${ETC}/mongod-shard.conf
-
-sed -i 's/\/var\/run\/mongodb/\/var\/run\/mongodb-configsvr/g' ${ETC}/mongod-configsvr.conf
-sed -i 's/\/var\/lib\/mongo/\/var\/lib\/mongo-configsvr/g' ${ETC}/mongod-configsvr.conf
-sed -i 's/\/var\/log\/mongodb/\/var\/log\/mongodb-configsvr/g' ${ETC}/mongod-configsvr.conf
-echo "finished"
-
-## Realoading SystemD daemon
-echo "systemd daemon reloading..."
-systemctl daemon-reload
-echo "finished"
+#cp ${ETC}/mongod.conf ${ETC}/mongod-configsvr.conf
+#cp ${ETC}/mongod.conf ${ETC}/mongod-shard.conf
+#
+#sed -i 's/\/var\/run\/mongodb/\/var\/run\/mongodb-shard/g' ${ETC}/mongod-shard.conf
+#sed -i 's/\/var\/lib\/mongo/\/var\/lib\/mongo-shard/g' ${ETC}/mongod-shard.conf
+#sed -i 's/\/var\/log\/mongodb/\/var\/log\/mongodb-shard/g' ${ETC}/mongod-shard.conf
+#
+#sed -i 's/\/var\/run\/mongodb/\/var\/run\/mongodb-configsvr/g' ${ETC}/mongod-configsvr.conf
+#sed -i 's/\/var\/lib\/mongo/\/var\/lib\/mongo-configsvr/g' ${ETC}/mongod-configsvr.conf
+#sed -i 's/\/var\/log\/mongodb/\/var\/log\/mongodb-configsvr/g' ${ETC}/mongod-configsvr.conf
+#echo "finished"
+#
+### Realoading SystemD daemon
+#echo "systemd daemon reloading..."
+#systemctl daemon-reload
+#echo "finished"
 
 ## Disabling SELinux
-echo "Disabling SELinux..."
 setenforce 0
 sed -i 's/SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
-echo "finished"
 
+## Creating /etc/hosts
+cat <<EOF > /etc/hosts
+127.0.0.1 localhost.localdomain localhost
+192.168.100.10 mongos.example.com mongos
+192.168.100.11 configsvr-01.example.com configsvr-01
+192.168.100.12 configsvr-02.example.com configsvr-02
+192.168.100.13 shard-01.example.com shard-01
+192.168.100.14 shard-02.example.com shard-02 
+192.168.100.15 shard-03.example.com shard-03
+192.168.100.16 shard-04.example.com shard-04
+EOF
