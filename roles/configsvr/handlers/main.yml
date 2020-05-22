@@ -1,0 +1,7 @@
+---
+# handlers file for configsvr
+
+- name: restart-mongodb
+  systemd:
+    name: mongod
+    state: restarted

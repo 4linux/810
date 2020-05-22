@@ -1,0 +1,36 @@
+---
+# tasks file for monitoring
+- name: "Creating prometheus configuration file directory"
+  file:
+    path: /etc/prometheus
+    owner: root
+    group: root
+    state: directory
+    mode: '0755'
+
+- name: "Copying prometheus config file"
+  template:
+    src: prometheus.yml.j2
+    dest: /etc/prometheus/prometheus.yml
+
+- name: 'Start Prometheus container'
+  docker_container:
+    name: prometheus
+    image: prom/prometheus
+    state: started
+    ports:
+    - '9090:9090'
+    restart_policy: always
+    volumes:
+    - /etc/prometheus:/etc/prometheus
+
+
+- name: 'Start Grafana container'
+  docker_container:
+    name: grafana
+    image: grafana/grafana
+    state: started
+    ports:
+    - '3000:3000'
+    restart_policy: always
+ 

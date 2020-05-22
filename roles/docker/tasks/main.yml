@@ -1,0 +1,22 @@
+---
+# tasks file for docker
+
+
+- name: Installing Docker CentOS repository
+  when: ansible_facts['distribution'] == 'CentOS'
+  get_url:
+    url: https://download.docker.com/linux/centos/docker-ce.repo
+    dest: /etc/yum.repos.d/docker-ce.repo
+
+- name: Installing Docker packages
+  when: ansible_facts['distribution'] == 'CentOS'
+  yum:
+    name: ['docker-ce','docker-ce-cli','containerd.io','python-docker-py']
+    state: present
+
+- name: Enabling SystemD Docker service
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+  

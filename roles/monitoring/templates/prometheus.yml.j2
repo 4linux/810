@@ -1,0 +1,18 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 30s
+
+scrape_configs:
+
+{% for address in range(10,17) %}
+  - job_name: mongodb_exporter_192-168-100-{{address}}
+    static_configs:
+      - targets: ['192.168.100.{{address}}:9216']
+{% endfor %}
+
+{% for address in range(10,17) %}
+  - job_name: node_exporter_192-168-100-{{address}}
+    static_configs:
+      - targets: ['192.168.100.{{address}}:9100']
+{% endfor %}
+

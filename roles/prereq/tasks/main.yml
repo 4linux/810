@@ -1,0 +1,30 @@
+---
+# tasks file for prereq
+
+- name: "Setting hosts file"
+  copy:
+    src: hosts
+    dest: /etc/hosts
+
+- name: "Setting timezone to America/SaoPaulo"
+  timezone:
+    name: America/Sao_Paulo
+
+- name: "Installing CentOS EPEL-RELEASE package "
+  when: ansible_facts['distribution'] == 'CentOS'
+  yum:
+    name: epel-release
+    state: present
+
+
+- name: "Disabling SELinux"
+  when: ansible_facts['distribution'] == 'CentOS'
+  selinux:
+    state: disabled
+
+- name: "Installing extra packages"
+  package:
+    name: ['vim','chrony']
+    state: present
+
+

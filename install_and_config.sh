@@ -92,8 +92,13 @@ cat <<EOF > /etc/hosts
 192.168.100.10 mongos.example.com mongos
 192.168.100.11 configsvr-01.example.com configsvr-01
 192.168.100.12 configsvr-02.example.com configsvr-02
-192.168.100.13 shard-01.example.com shard-01
-192.168.100.14 shard-02.example.com shard-02 
-192.168.100.15 shard-03.example.com shard-03
-192.168.100.16 shard-04.example.com shard-04
+192.168.100.13 shard-01.example.com shard-01 sh0-01
+192.168.100.14 shard-02.example.com shard-02 sh0-02
+192.168.100.15 shard-03.example.com shard-03 sh1-01
+192.168.100.16 shard-04.example.com shard-04 sh1-02
 EOF
+
+
+sudo yum install -y ntp lvm2
+sudo timedatectl set-timezone America/Sao_Paulo
+
