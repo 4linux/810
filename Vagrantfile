@@ -10,13 +10,13 @@ machines = {
 	"sh0-02" => { "ip" => "14", "memory" => "512", "cpus" => "1" },
 	"sh1-01" => { "ip" => "15", "memory" => "512", "cpus" => "1" },
 	"sh1-02" => { "ip" => "16", "memory" => "512", "cpus" => "1" },
-	"prometheus" => { "ip" => "254", "memory" => "512", "cpus" => "1" },
+	"monitoring" => { "ip" => "254", "memory" => "512", "cpus" => "1" },
 }
 
 Vagrant.configure("2") do |config|
+  config.vm.box = "centos/8"
   machines.each do |name,conf|
     config.vm.define "#{name}" do |srv|
-      srv.vm.box = "centos/7"
       srv.vm.hostname = "#{name}.example.com"
       srv.vm.network 'private_network', ip: "192.168.100.#{conf["ip"]}"
       srv.vm.provider 'virtualbox' do |vb|
@@ -24,15 +24,19 @@ Vagrant.configure("2") do |config|
         vb.memory = "#{conf["memory"]}"
         vb.cpus = "#{conf["cpus"]}"
       end
-      if name == 'prometheus'
-        config.vm.provision "ansible" do |ansible|
-          ansible.limit = "all"
-          ansible.playbook = "playbook.yml"
-        end
-      end
-    end
-  end
+      
+      srv.vm.provision "shell", inline: <<-SHELL
+        echo "root:qwe123qwe" | chpasswd
+        sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+      SHELL
   
+    end
 
+  end
+    
+  config.vm.provision "ansible" do |ansible|
+    ansible.limit = "all"
+    ansible.playbook = "playbook.yml"
+  end
 
 end

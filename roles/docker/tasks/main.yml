@@ -10,9 +10,15 @@
 
 - name: Installing Docker packages
   when: ansible_facts['distribution'] == 'CentOS'
-  yum:
-    name: ['docker-ce','docker-ce-cli','containerd.io','python-docker-py']
+  dnf:
+    name: ['docker-ce','docker-ce-cli','containerd.io']
     state: present
+
+- name: Upgrade libseccomp
+  when: ansible_facts['distribution'] == 'CentOS'
+  dnf:
+    name: 'libseccomp'
+    state: latest
 
 - name: Enabling SystemD Docker service
   systemd:

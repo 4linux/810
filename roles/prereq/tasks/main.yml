@@ -6,13 +6,9 @@
     src: hosts
     dest: /etc/hosts
 
-- name: "Setting timezone to America/SaoPaulo"
-  timezone:
-    name: America/Sao_Paulo
-
 - name: "Installing CentOS EPEL-RELEASE package "
   when: ansible_facts['distribution'] == 'CentOS'
-  yum:
+  dnf:
     name: epel-release
     state: present
 
@@ -21,6 +17,12 @@
   when: ansible_facts['distribution'] == 'CentOS'
   selinux:
     state: disabled
+
+- name: "Disable Firewalld"
+  systemd:
+    name: firewalld
+    state: stopped
+    enabled: no
 
 - name: "Installing extra packages"
   package:

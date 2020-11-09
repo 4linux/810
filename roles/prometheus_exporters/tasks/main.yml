@@ -11,16 +11,24 @@
     src: node_exporter.tar.gz
     dest: /tmp
 
+- name: "Getting exporters"
+  get_url:
+    url: "{{item}}"
+    dest: /tmp
+  loop:
+  - "https://github.com/percona/mongodb_exporter/releases/download/v0.11.2/mongodb_exporter-0.11.2.linux-amd64.tar.gz"
+  - "https://github.com/prometheus/node_exporter/releases/download/v1.0.1/node_exporter-1.0.1.linux-amd64.tar.gz"
+
 
 - name: "Extracting MongoDB Exporter"
   unarchive:
-    src: /tmp/mongodb_exporter.tar.gz
+    src: /tmp/mongodb_exporter-0.11.2.linux-amd64.tar.gz
     dest: /usr/local/sbin/
     remote_src: yes
 
 - name: "Extracting Node Exporter"
   unarchive:
-    src: /tmp/node_exporter.tar.gz
+    src: /tmp/node_exporter-1.0.1.linux-amd64.tar.gz
     dest: /tmp
     remote_src: yes
     mode: "0774"
@@ -29,7 +37,7 @@
 
 - name: "Copying Node Exporter"
   copy:
-    src: /tmp/node_exporter-0.18.1.linux-amd64/node_exporter
+    src: /tmp/node_exporter-1.0.1.linux-amd64/node_exporter
     dest: /usr/local/sbin/
     remote_src: yes
     mode: "0774"

@@ -3,29 +3,29 @@
   become: yes
   gather_facts: yes
   roles:
-#  - prereq
+  - prereq
   - prometheus_exporters
 
-#- hosts: mongos
-#  become: yes
-#  roles:
-#  - mongodb
-#  - mongos
+- hosts: mongos
+  become: yes
+  roles:
+  - mongodb
+  #- mongos
   
-#- hosts: configsvr-01,configsvr-02
-#  become: yes
-#  roles:
-#  - mongodb
-#  - configsvr
+- hosts: configsvr-01,configsvr-02
+  become: yes
+  roles:
+  - mongodb
+  #- configsvr
 
-#- hosts: sh*
-#  become: yes
-#  roles:
-#  - mongodb
-#  - shard
+- hosts: sh*
+  become: yes
+  roles:
+  - mongodb
+  #- shard 
 
-#- hosts: prometheus
-#  become: yes
-#  roles:
-#  - docker
-#  - monitoring
+- hosts: monitoring
+  become: yes
+  roles:
+  - docker
+  - monitoring
