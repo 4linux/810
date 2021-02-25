@@ -1,8 +1,0 @@
----
-# tasks file for mongos
-
-- name: "Copying mongos.service file"
-  copy:
-    src: mongos.service
-    dest: /etc/systemd/system/mongos.service
-
