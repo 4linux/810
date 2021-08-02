@@ -47,7 +47,12 @@ Vagrant.configure("2") do |config|
           s.args = [config.vm.box]
         end
       end
-
+      if "#{name}" != "monitoring" then
+        srv.vm.provision "shell" do |s| 
+          s.path = "provision/install_mongo.sh"
+          s.args = [config.vm.box]
+        end
+      end
   
     end
 
