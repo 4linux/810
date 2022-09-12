@@ -1,0 +1,322 @@
+########## Correção exercício para casa 
+
+use mercado 
+
+db.produtos.insert({
+     Nome: "Teclado"
+    ,Descricao: "Teclado multimidia digital"
+    ,Preco: 69.90
+    ,Qtd: 5
+    ,Marca: "IBM"
+})
+
+db.produtos.find()
+
+db.produtos.find().pretty()
+
+db.produtos.insert({
+     Nome: "Pendrive"
+    ,Descricao: "Pendrive 10GB Kingston"
+    ,Preco: 10.90
+    ,Qtd: 8
+    ,Marca: "Kingston"
+})
+
+db.produtos.insert({
+     Nome: "Pendrive"
+})
+
+db.produtos.find()
+
+db.produtos.find().count()
+
+## Só vai inserir 1
+db.produtos.insert({
+     Nome: "Calça"
+    ,Descricao: "Calça Moletom"
+    ,Preco: 25.00
+     }
+    ,{
+         Nome: "Blusa"
+         ,Descricao: "Blusa Regata"
+         ,Preco: 24.60
+    }
+)
+
+db.produtos.find()
+
+## BulkWrite
+db.produtos.insert([
+     {
+     Nome: "Calça"
+    ,Descricao: "Calça Moletom"
+    ,Preco: 25.00
+     }
+    ,{
+         Nome: "Blusa"
+         ,Descricao: "Blusa Regata"
+         ,Preco: 24.60
+    }
+     ]
+)
+
+db.produtos.find()
+
+## InsertMany
+db.produtos.insertMany([
+     {
+           Nome: "Calça"
+          ,Descricao: "Calça Moletom"
+          ,Preco: 25.00
+     },
+     {
+         Nome: "Blusa"
+         ,Descricao: "Blusa Regata"
+         ,Preco: 24.60
+    }
+])
+
+db.produtos.find()
+
+############ Aula 03
+
+use dexter 
+
+db.funcionarios.insert({"nome":"marquito"})
+
+db.funcionarios.find().pretty()
+
+db.funcionarios.insert([{"nome":"Linus Torvalds"},{"nome":"Jon Maddog"}])
+
+db.funcionarios.find().pretty()
+
+db.funcionarios.insertOne({"nome":"joao"})
+
+db.funcionarios.find().pretty()
+
+db.funcionarios.insertMany([{"nome":"bia"},{"nome":"paty"}])
+
+db.funcionarios.find().pretty()
+
+## Arquivo
+## No shell linux 
+vim /vagrant/scripts/filmes.js
+## Editar a linha 
+c = new Mongo("mongodb://admin:4linux@localhost");
+
+mongo /vagrant/scripts/filmes.js
+
+mongo -u admin 
+
+## No shell do mongo 
+show dbs
+
+use dexter 
+
+show collections
+
+db.filmes.find();
+
+db.filmes.find().pretty()
+
+db.filmes.find().count()
+
+db.filmes.find( { "titulo":"O Planeta dos Macacos","ano":"1968" } )
+
+db.filmes.find( { "titulo":"O Planeta dos Macacos","Ano":"1968" } )
+
+// Critérios de busca: Página 46 
+
+db.filmes.find({"ano":"1993"})
+
+db.filmes.find({"ano":1993})
+
+db.filmes.find({"ano":{"$gte":"2000"}})
+
+db.filmes.find({"ano":{"$lte":"1995"}})
+
+db.filmes.find({"ano":{"$gte":"1995","$lte":"2000"}})
+
+db.filmes.find({"diretor":"Quentin Tarantino"})
+
+db.filmes.find({"diretor":"Quentin Tarantino", "ano": {"$gte":"2000","$lte":"2005"}})
+
+db.filmes.find({"ano":{$in:["2005","1995"]}})
+
+db.filmes.find({"titulo": {"$regex":".*aluguel*."}})
+
+db.filmes.find({"titulo": {"$regex":".*aluguel*.","$options":"i"}})
+
+db.filmes.find({"titulo":/aluguel/})
+
+db.filmes.find({"titulo":/aluguel/i})
+
+db.filmes.find({},{"diretor":1,"titulo":1,"_id":0})
+
+use mercado 
+
+db.produtos.find()
+
+db.produtos.insert({"Nome" : "Tenis", "Descricao" : "Tenis padrao", "Preco" : "24" })
+
+db.produtos.insert({"Nome" : "Crocs", "Descricao" : "Crocs padrao", "Preco" : "18" , cor: "rosa" })
+
+db.produtos.find({ Preco: {$type: "number" }})
+
+db.produtos.find({ Preco: {$type: "string" }})
+
+db.produtos.find({ cor: {$exists: true }})
+
+db.produtos.find({ cor: {$exists: false }})
+
+// update pagina 49 
+
+use dexter
+
+db.filmes.find({"titulo":"Kill Bill"})
+
+db.filmes.update({"titulo":"Kill Bill"},{"titulo":"Kill Bill vol 2"})
+
+db.filmes.find({"titulo":"Kill Bill vol 2"})
+
+db.filmes.find({"titulo" : "Pulp Fiction"})
+
+db.filmes.update({"titulo" : "Pulp Fiction"},{"$set": {"titulo":"Pulp Fiction: Tempo de violencia"}})
+
+db.filmes.find({"titulo": /pulp.*/i})
+
+db.filmes.find() 
+
+db.filmes.update({},{"$set":{"avaliacao.medio":1}})
+
+db.filmes.update({},{"$set":{"avaliacao.medio":1}}, {"multi":true})
+
+db.filmes.find() 
+
+db.filmes.update({},{"$unset":{"avaliacao.medio":""}},{"multi":true})
+
+db.filmes.find() 
+
+db.filmes.update({"titulo":"Interestelar"},{"$inc": {"avaliacao.bom":1}},{"multi":true})
+
+db.filmes.find({"titulo":"Interestelar"},{"_id":0,"titulo":1,"avaliacao":1})
+
+db.filmes.update({"titulo":"Interestelar"},{"$mul": {"avaliacao.bom":8}},{"multi":true})
+
+db.filmes.find({"titulo":"Interestelar"},{"_id":0,"titulo":1,"avaliacao":1})
+
+db.filmes.update({"titulo":"Interestelar"},{"$min":{"avaliacao.bom":5}})
+
+db.filmes.find({"titulo":"Interestelar"},{"_id":0,"titulo":1,"avaliacao":1})
+
+db.filmes.update({},{"$rename":{"ano":"dataLancamento"}},{"multi":true})
+
+db.filmes.find()
+
+// Página 52 - Operadores de array, listas e matrizes
+
+db.filmes.find({"titulo":"Interestelar"})
+
+db.filmes.update({"titulo":"Interestelar"},{"$set": {"atores":["Anne Hathaway","Casey Affleck","Matthew McConaughey"]}})
+
+db.filmes.find({"titulo":"Interestelar"})
+
+db.filmes.update({"titulo":"Interestelar"},{"$addToSet": {"atores":"Matt Damon"}})
+
+db.filmes.find({"titulo":"Interestelar"})
+
+db.filmes.update({"titulo":"Interestelar"},{"$addToSet": {"atores":{"$each":["Topher Grace","Ellen Burstyn","Wes Bentley"]}}})
+
+db.filmes.update({"titulo":"Interestelar"},{"$push": {"atores":"Jessica Chastain"}})
+
+db.filmes.find({"titulo":"Interestelar"})
+
+db.filmes.update({"titulo":"Interestelar"},{"$push": {"atores":"Jessica Chastain"}})
+
+db.filmes.find({"titulo":"Interestelar"})
+
+db.filmes.update({"titulo":"Interestelar"},{"$pop": {"atores":1}})
+
+db.filmes.find({"titulo":"Interestelar"})
+
+db.filmes.update({"titulo":"Interestelar"},{"$pop": {"atores":-1}})
+
+db.filmes.find({"titulo":"Interestelar"})
+
+db.filmes.update(
+     {"titulo":"Interestelar"},
+     {"$pull":{
+     "atores":{
+          "$in":['Ellen Burstyn','Topher Grace']
+     }}}
+)
+
+db.filmes.find({"titulo":"Interestelar"})
+
+db.filmes.update({"titulo":"Interestelar"},{"$set": {"atores.2":"Wagner Moura"}})
+
+db.filmes.find({"titulo":"Interestelar"})
+
+db.filmes.update({"titulo":"Interestelar","atores":"Wagner Moura"},{"$set":{"atores.$":"Matthew McConaughey"}})
+
+db.filmes.find({"titulo":"Interestelar"})
+
+db.filmes.update({"titulo":"Interestelar"},{
+     "$push":{
+          "atores" : {
+               $each: ["Jessica Chastain"] ,
+               "$position": 3
+          }
+}})
+
+db.filmes.find({"titulo":"Interestelar"})
+
+db.filmes.update(
+     {"titulo":"Interestelar"},
+     {
+          "$push":{
+               "atores":
+               {
+                    "$each":["Topher Grace","Ellen Burstyn","Wes Bentley"],
+                    "$slice": -3
+               }
+          }
+     }
+)
+
+db.filmes.find({"titulo":"Interestelar"})
+
+db.filmes.update(
+     {"titulo":"Interestelar"},
+     {
+          "$push":{
+               "atores":
+               {
+                    "$each":["Zenildo","Vitor", "Amanda"],
+                    "$sort": 1
+               }
+          }
+     }
+)
+
+db.filmes.find({"titulo":"Interestelar"})
+
+// UpdateOne Página 57
+
+db.filmes.updateOne({"titulo":"Interestelar"},{"$set": {"avaliacao.medio":2}})
+
+db.filmes.find({"titulo":"Interestelar"})
+
+db.filmes.find({"dataLancamento":"1968"})
+
+db.filmes.updateMany({"dataLancamento":"1968"},{"$set": {"avaliacao.bom":1}})
+
+db.filmes.find({"dataLancamento":"1968"})
+
+// Delete página 58 
+
+db.filmes.deleteOne({"dataLancamento":"2002"})
+
+db.filmes.deleteMany({"diretor":"Quentin Tarantino"})
+
+db.filmes.remove({"dataLancamento":{"$gte":"2000","$lte":"2002"}})

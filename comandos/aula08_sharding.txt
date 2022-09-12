@@ -1,0 +1,468 @@
+// MongoS: rota de acesso aos dados
+// ConfigServer: servidores de configuração, armazenam as configurações do ambiente e a localização dos dados
+// Shard: unidade do ambiente de Sharding que armazena os dados e os replica entre seus nós
+
+// Config Servers 
+
+/////////////// Script para rodar apenas se desejar remover máquinas não acessiveis no replicaSet
+cfg = rs.conf()
+cfg.members = [ cfg.members[0] ]
+rs.reconfig(cfg, {force : true})
+
+
+--------------------------------------------------------------------------------------------
+------- Parte 01: ConfigServers 
+--------------------------------------------------------------------------------------------
+
+#### Realizar  a configuração nos dois servidores (configsvr-01 e configsvr-02)
+// 192.168.100.11
+// 192.168.100.12
+
+sudo vim /etc/mongod.conf
+/*******************************************************/
+
+net:
+  port: 27019
+  bindIp: 0.0.0.0
+
+security:
+  keyFile: /var/lib/mongo/mongo.key
+
+replication:
+  replSetName: config0
+
+sharding:
+  clusterRole: configsvr
+
+/*******************************************************/
+
+sudo systemctl stop mongod
+
+cp /var/lib/mongo/mongo.key /var/lib/
+
+sudo rm -rf /var/lib/mongo/* 
+
+cp /var/lib/mongo.key /var/lib/mongo/mongo.key
+
+chown mongod: /var/lib/mongo/mongo.key 
+
+chmod 400 /var/lib/mongo/mongo.key
+
+systemctl start mongod
+
+mongo --port 27019
+
+// No mongo Shell 
+
+rs.initiate({
+  _id:"config0",
+  configsvr:true,
+  members:[
+      {_id:0,host:"192.168.100.11:27019"},
+      {_id:1,host:"192.168.100.12:27019"}
+]})
+
+use admin
+db.createUser(
+    {
+        user: "admin",
+        pwd: "4linux",
+        roles: ["root"]
+    }
+)
+
+mongo --port 27019 -u admin
+
+use curso_801
+db.aulas.insert({ nome: "Aula05", conteudo: "Sharding"})
+
+--------------------------------------------------------------------------------------------
+------- Parte 02: Shard0
+--------------------------------------------------------------------------------------------
+
+// 192.168.100.13
+// 192.168.100.14
+
+sudo vim /etc/mongod.conf
+
+/*******************************************************/
+
+net:
+  port: 27018
+  bindIp: 0.0.0.0
+
+security:
+  keyFile: /var/lib/mongo/mongo.key
+
+replication:
+  replSetName: shard0
+  
+sharding:
+  clusterRole: shardsvr
+
+/*******************************************************/
+
+sudo -i 
+
+cat << EOF > /var/lib/mongo/mongo.key
+9+O3svR+Js1+lKZjcEuo3jWbZh0mhr9QNxp4gk4ZZCB5hPjmrQezEs6JUjmTFrzd
+Yea1/KX8SEDMuRdBCcMUxwmZrdwgRb2a5lBPkpx9yn3qPn5OYNGpQMPuUIVzFZn1
+GGZ9CISPXercUz3QthPseBeFp52NnD7g98QFbvjMpAk+eC07v3NpCO0cVXGS7BEm
+e/5zi1lOkVmoUUB4vn3W7S4nM8rk9TScp3xfg9VsL0TzXCqQUkk16wDjl9NU+Y1S
+c9RmmeoNCCx/J66y4X6zh3inHZr9yRltTvy7RE+TbQQF+vFfrVvcXjP9kPbTUHuv
+97WDMnUmzRb+Rf6EURxmzDxseO/JVdVNaVxdGHJ/Qk0rX+4w8ja5QobOWzj2g5Hf
+7Zy5vryc+XuXQdlzH2ncLYMmsH1g2fDkJoFmLKaj6g+dSZmwNOeRHNBTjSOaVUVo
+znYbxp0rppvfHs47UbqgYjIWAC9T2MycibOkcvbV1dxL62YoxFJU8Ah1eSkbXbGG
+IfZYbiwC4SNA+A5GGOUnHvNj8zq/QeWEnyASr8GjJd4/d4zJxTPXxkCCoPyuS5LY
+BeCAx74uU943Eb5ytu1tMy0Vw7YQXLW1p0HAL748HcHVYXj227cQnUTD2N8TJnWU
+/OIb2kszE86H0plG+GM2XMuIGlL+1J2UfxEYuWPhQ9CzEx5oCcPbduBPUK7Fph7j
+KN8fxYDHC9lspeZfSTjWTlV569l9sejHqCR8pET6sQFXKbsqFojpOj6s8FtU74qa
+lok1jXbREDxTnTfKaqoqiuJzdZGsqHM7lXqgSNnpquYlUgjrBmu6KGpVjWRxA5gs
+j6/PPAxVeQ2c6KrvSENmuQYtYlwi/xXJDpb04bTfNxL6VY8P9607bs1NwtAtZGhf
+CRX/WLnyBcMcwNHoDF7K4Q6olo1J36zhsNDmFNbqzK35HjaPV2Of/36TjEC1/jYD
+dbaVvMXoPRS3+Z1kv7E0pyyZeDAD3VpIlRoNNpXuXLI2Msoj
+EOF
+
+chown mongod: /var/lib/mongo/mongo.key
+chmod 400 /var/lib/mongo/mongo.key
+
+systemctl restart mongod
+
+mongo --port 27018
+
+rs.initiate({_id:"shard0",
+  members:[
+    {_id:0,host:"192.168.100.13:27018"},
+    {_id:1,host:"192.168.100.14:27018"}
+]})
+
+use admin
+db.createUser(
+    {
+        user: "admin",
+        pwd: "4linux",
+        roles: ["root"]
+    }
+)
+
+--------------------------------------------------------------------------------------------
+------- Parte 03: Shard1
+--------------------------------------------------------------------------------------------
+
+// 192.168.100.15
+// 192.168.100.16
+
+sudo vim /etc/mongod.conf
+
+/*******************************************************/
+
+net:
+  port: 27018
+  bindIp: 0.0.0.0
+
+security:
+  keyFile: /var/lib/mongo/mongo.key
+
+replication:
+  replSetName: shard1
+  
+sharding:
+  clusterRole: shardsvr
+
+/*******************************************************/
+
+sudo -i 
+
+cat << EOF > /var/lib/mongo/mongo.key
+9+O3svR+Js1+lKZjcEuo3jWbZh0mhr9QNxp4gk4ZZCB5hPjmrQezEs6JUjmTFrzd
+Yea1/KX8SEDMuRdBCcMUxwmZrdwgRb2a5lBPkpx9yn3qPn5OYNGpQMPuUIVzFZn1
+GGZ9CISPXercUz3QthPseBeFp52NnD7g98QFbvjMpAk+eC07v3NpCO0cVXGS7BEm
+e/5zi1lOkVmoUUB4vn3W7S4nM8rk9TScp3xfg9VsL0TzXCqQUkk16wDjl9NU+Y1S
+c9RmmeoNCCx/J66y4X6zh3inHZr9yRltTvy7RE+TbQQF+vFfrVvcXjP9kPbTUHuv
+97WDMnUmzRb+Rf6EURxmzDxseO/JVdVNaVxdGHJ/Qk0rX+4w8ja5QobOWzj2g5Hf
+7Zy5vryc+XuXQdlzH2ncLYMmsH1g2fDkJoFmLKaj6g+dSZmwNOeRHNBTjSOaVUVo
+znYbxp0rppvfHs47UbqgYjIWAC9T2MycibOkcvbV1dxL62YoxFJU8Ah1eSkbXbGG
+IfZYbiwC4SNA+A5GGOUnHvNj8zq/QeWEnyASr8GjJd4/d4zJxTPXxkCCoPyuS5LY
+BeCAx74uU943Eb5ytu1tMy0Vw7YQXLW1p0HAL748HcHVYXj227cQnUTD2N8TJnWU
+/OIb2kszE86H0plG+GM2XMuIGlL+1J2UfxEYuWPhQ9CzEx5oCcPbduBPUK7Fph7j
+KN8fxYDHC9lspeZfSTjWTlV569l9sejHqCR8pET6sQFXKbsqFojpOj6s8FtU74qa
+lok1jXbREDxTnTfKaqoqiuJzdZGsqHM7lXqgSNnpquYlUgjrBmu6KGpVjWRxA5gs
+j6/PPAxVeQ2c6KrvSENmuQYtYlwi/xXJDpb04bTfNxL6VY8P9607bs1NwtAtZGhf
+CRX/WLnyBcMcwNHoDF7K4Q6olo1J36zhsNDmFNbqzK35HjaPV2Of/36TjEC1/jYD
+dbaVvMXoPRS3+Z1kv7E0pyyZeDAD3VpIlRoNNpXuXLI2Msoj
+EOF
+
+chown mongod: /var/lib/mongo/mongo.key
+chmod 400 /var/lib/mongo/mongo.key
+
+systemctl restart mongod
+
+mongo --port 27018
+
+rs.initiate({_id:"shard1",
+  members:[
+    {_id:0,host:"192.168.100.15:27018"},
+    {_id:1,host:"192.168.100.16:27018"}
+]})
+
+use admin
+db.createUser(
+    {
+        user: "admin",
+        pwd: "4linux",
+        roles: ["root"]
+    }
+)
+
+--------------------------------------------------------------------------------------------
+------- Parte 04: mongos 
+--------------------------------------------------------------------------------------------
+
+systemctl stop mongod
+rm -rf /var/lib/mongo/*
+
+// 192.168.100.10
+
+mongos --configdb config0/192.168.56.11:27019,192.168.56.12:27019
+
+vim /etc/mongos.conf
+
+/*******************************************************/
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /var/log/mongodb/mongod.log
+  
+processManagement:
+  fork: true
+  pidFilePath: /var/run/mongodb/mongos.pid
+  timeZoneInfo: /usr/share/zoneinfo
+
+net:
+  port: 27017
+  bindIp: 0.0.0.0
+
+security:
+  keyFile: /var/lib/mongo/mongo.key
+
+sharding:
+  configDB: "config0/192.168.100.11:27019,192.168.100.12:27019"
+
+/*******************************************************/
+
+sudo -i 
+
+cat << EOF > /var/lib/mongo/mongo.key
+9+O3svR+Js1+lKZjcEuo3jWbZh0mhr9QNxp4gk4ZZCB5hPjmrQezEs6JUjmTFrzd
+Yea1/KX8SEDMuRdBCcMUxwmZrdwgRb2a5lBPkpx9yn3qPn5OYNGpQMPuUIVzFZn1
+GGZ9CISPXercUz3QthPseBeFp52NnD7g98QFbvjMpAk+eC07v3NpCO0cVXGS7BEm
+e/5zi1lOkVmoUUB4vn3W7S4nM8rk9TScp3xfg9VsL0TzXCqQUkk16wDjl9NU+Y1S
+c9RmmeoNCCx/J66y4X6zh3inHZr9yRltTvy7RE+TbQQF+vFfrVvcXjP9kPbTUHuv
+97WDMnUmzRb+Rf6EURxmzDxseO/JVdVNaVxdGHJ/Qk0rX+4w8ja5QobOWzj2g5Hf
+7Zy5vryc+XuXQdlzH2ncLYMmsH1g2fDkJoFmLKaj6g+dSZmwNOeRHNBTjSOaVUVo
+znYbxp0rppvfHs47UbqgYjIWAC9T2MycibOkcvbV1dxL62YoxFJU8Ah1eSkbXbGG
+IfZYbiwC4SNA+A5GGOUnHvNj8zq/QeWEnyASr8GjJd4/d4zJxTPXxkCCoPyuS5LY
+BeCAx74uU943Eb5ytu1tMy0Vw7YQXLW1p0HAL748HcHVYXj227cQnUTD2N8TJnWU
+/OIb2kszE86H0plG+GM2XMuIGlL+1J2UfxEYuWPhQ9CzEx5oCcPbduBPUK7Fph7j
+KN8fxYDHC9lspeZfSTjWTlV569l9sejHqCR8pET6sQFXKbsqFojpOj6s8FtU74qa
+lok1jXbREDxTnTfKaqoqiuJzdZGsqHM7lXqgSNnpquYlUgjrBmu6KGpVjWRxA5gs
+j6/PPAxVeQ2c6KrvSENmuQYtYlwi/xXJDpb04bTfNxL6VY8P9607bs1NwtAtZGhf
+CRX/WLnyBcMcwNHoDF7K4Q6olo1J36zhsNDmFNbqzK35HjaPV2Of/36TjEC1/jYD
+dbaVvMXoPRS3+Z1kv7E0pyyZeDAD3VpIlRoNNpXuXLI2Msoj
+EOF
+
+chown mongod: /var/lib/mongo/mongo.key
+chmod 400 /var/lib/mongo/mongo.key
+
+sudo vim /etc/systemd/system/mongos.service
+
+/*******************************************************/
+[Unit]
+Description=MongoDB router MongoS
+After=syslog.target
+After=network.target
+
+[Service]
+User=mongod
+Group=mongod
+Type=forking
+RuntimeDirectory=mongodb
+RuntimeDirectoryMode=755
+ExecStartPre=/usr/bin/mkdir -p /var/run/mongodb
+ExecStartPre=/usr/bin/chown mongod:mongod /var/run/mongodb
+ExecStartPre=/usr/bin/chmod 0755 /var/run/mongodb
+PIDFile=/var/run/mongodb/mongos.pid
+ExecStart=/usr/bin/mongos --quiet \
+    --config /etc/mongos.conf \
+    --pidfilepath /var/run/mongodb/mongos.pid \
+    --fork
+LimitFSIZE=infinity
+LimitCPU=infinity
+LimitAS=infinity
+LimitNOFILE=64000
+LimitNPROC=64000
+
+[Install]
+WantedBy=multi-user.target
+/*******************************************************/
+
+systemctl daemon-reload
+
+systemctl start mongos
+
+mongo -u admin 
+
+sh.status()
+
+sh.addShard("shard0/192.168.100.13:27018")
+
+sh.status()
+
+sh.addShard("shard1/192.168.100.15:27018")
+
+use netflix;
+
+sh.enableSharding("netflix")
+
+sh.status()
+
+use config
+
+// 1MB
+db.settings.save({_id:"chunksize",value:1})
+
+use netflix
+
+db.filmes.insert({titulo:"Gifted Hands",ano:2009})
+
+db.filmes.createIndex({"\_id":"hashed"})
+
+sh.shardCollection("netflix.filmes",{"\_id":"hashed"})
+
+sh.status()
+
+//////// Scipt populando registros
+
+/*********************************************************/
+c = new Mongo("mongodb://admin:4linux@192.168.100.10:27017/admin");
+
+db = c.getDB("netflix");
+
+var filmes = db.filmes.initializeUnorderedBulkOp();
+
+for (var i = 0; i<=1000000; i++) {
+  filmes.insert({titulo:"TituloFilme"+i})
+}
+
+filmes.execute();
+
+/*********************************************************/
+
+use netflix
+
+db.filmes.storageSize()
+
+db.filmes.getShardDistribution()
+
+db.runCommand({"removeShard":"shard0"})
+
+db.adminCommand( { movePrimary : "netflix", to : "shard1" } )
+
+db.filmes.createIndex({"\_id":"hashed"})
+
+sh.shardCollection("netflix.filmes_ano",{"ano": 1})
+
+db.filmes_ano.getIndexes()
+
+/*********************************************************/
+var filmes_ano = db.filmes_ano.initializeUnorderedBulkOp();
+
+for (var i = 0; i<=1000000; i++) {
+  filmes_ano.insert({titulo:"TituloFilme"+i, "ano": i})
+}
+
+filmes_ano.execute();
+/*********************************************************/
+
+db.filmes_ano.getShardDistribution()
+
+db.filmes_ano.find({ ano: 2009 })
+
+var exec = db.filmes_ano.find({ ano: 2009 }).explain("executionStats")
+
+exec.executionStats.executionTimeMillis
+exec.executionStats.totalDocsExamined
+
+var exec_long = db.filmes_ano.find({ titulo: "TituloFilme2099" }).explain("executionStats")
+
+exec_long.executionStats.executionTimeMillis
+exec_long.executionStats.totalDocsExamined
+
+db.filmes_ano.getShardDistribution()
+
+use config
+
+// https://www.mydbaworld.com/shard-distribution-all-databases-mongodb-cluster/
+var result=new Object();
+db.chunks.aggregate(
+    [
+        {
+            "$group" :
+            {
+                _id : { collection: "$ns", shard: "$shard"},
+                chunks:{$sum:1},
+                jumbo:{$sum:"$jumbo"},
+            }
+        },
+        {
+            "$sort" :
+            {
+                "_id.collection" : 1,
+                "_id.shard" : 1
+            }
+        }
+    ],
+    {
+        cursor: { batchSize: 0 }
+    }
+)
+
+// Se conecte ao shard0 ( 192.168.100.13 )
+
+mongo --port 27018 -u admin
+
+use netflix
+
+db.filmes.find().count()
+
+db.filmes_ano.find().count()
+
+use shard_aleatorio
+
+db.minhacollection.insert({ "Nome": "Pombo"})
+
+// Se conecte ao shard1 ( 192.168.100.15 )
+
+mongo --port 27018 -u admin
+
+use netflix
+
+db.filmes.find().count()
+
+db.filmes_ano.find().count()
+
+// Novamente ao mongos 
+sh.enableSharding("ultimo_teste")
+
+sh.status()
+
+use shard_aleatorio
+db.col1.insert({"Nome": "Shard" })
+db.col2.insert({"Nome": "Shard" })
+
+use ultimo_teste
+db.col1.insert({"Nome": "Shard" })
+db.col2.insert({"Nome": "Shard" })
+
+sh.status()

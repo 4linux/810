@@ -1,0 +1,88 @@
+
+use curso
+
+db.alunos.insert(
+{
+    nome: {Nome: "Linus", Sobrenome: "Torvalds"},   
+    aulas:[
+    {
+        curso: "750 - Linux System Administration",
+        carga: "40h",
+        desconto: "20%",
+        status: "concluido"
+    },
+    {
+        curso: "752 - Linux Servers",
+        carga: "40h",
+        desconto: "15%",    
+        status: "cursando"
+    },
+    {
+        curso: "528 - Continuous Monitoring",
+        carga: "40h",
+        desconto: "10%",
+        status: "agendado"
+    }
+    ]
+}
+)
+
+db.alunos.find().pretty()
+
+db.cursos.insert([
+{
+    _id: 100,
+    curso: "750 - Linux System Administration",
+    carga: "40h",
+    descricao: "Curso introdutório de administração Linux"
+    },
+    {
+    _id: 102,
+    curso: "752 - Linux Servers",
+    carga: "40h",
+    descricao: "Curso sobre administração de Serviços e Servidores Linux"
+    },
+    {
+    _id: 145,
+    curso: "528 - Continuous Monitoring",
+    carga: "40h",
+    descricao: "Monitoramento Ágil com Zabbix e Prometheus"
+    }
+])
+
+db.cursos.find().pretty()
+
+db.alunos_normalizado.insert(
+{
+    nome: {Nome: "Linus", Sobrenome: "Torvalds"},
+    aulas:[
+    {
+        id: 100,
+        desconto: "20%",
+        status: "concluido"
+    },
+    {
+        id: 102,
+        desconto: "15%",
+        status: "cursando"
+    },
+    {
+        id: 145,
+        desconto: "10%",
+        status: "agendado"
+    }
+]}
+)
+
+db.alunos_normalizado.find().pretty()
+
+db.alunos_normalizado.aggreate
+
+db.alunos_normalizado.aggregate([
+    {"$unwind":"$aulas"},
+    {"$lookup":{
+        "from":"cursos",
+        "localField":"aulas.id",
+        "foreignField":"_id",
+        "as":"curso"}}
+]).pretty()

@@ -1,0 +1,93 @@
+
+
+use admin
+db.createUser({
+    user:"dba",pwd:"4linux",
+    roles:[
+    {role:"userAdminAnyDatabase",db:"admin"},
+    {role:"clusterAdmin",db:"admin"},  
+    ]
+})
+
+db.getUsers()
+
+mongo -u dba -p 4linux --authenticationDatabase admin
+
+mongo admin -u dba -p 4linux
+
+show dbs 
+
+use admin 
+
+db.updateUser(
+        "dba",
+    {
+        roles : [ "root" ],
+        pwd: "4linux"
+}
+)
+
+db.getUsers()
+
+db.changeUserPassword("dba","testeNova")
+
+mongo -u dba
+
+use admin
+
+db.removeUser("dba")
+
+// WARNING: db.removeUser has been deprecated, please use db.dropUser instead
+
+db.getUsers()
+
+mongo -u admin 
+
+use admin
+db.createUser({
+    user:"dba",pwd:"4linux",
+    roles:[
+    {role:"userAdminAnyDatabase",db:"admin"},
+    {role:"clusterAdmin",db:"admin"},  
+    ]
+})
+
+db.grantRolesToUser("dba",[ { role: "read", db: "stock" } ])
+
+db.getUser("dba")
+
+db.getRole( "readWrite", { showPrivileges: true } )
+
+db.createRole(
+    {
+        role: "updateNetflix",
+        privileges: [        
+        { resource: { db:'netflix', collection:'filmes' }, actions: [ "update" ]
+    }
+
+    ],
+    roles: []
+}
+)
+
+db.getRole( "updateNetflix", { showPrivileges: true } )
+
+use admin
+db.createUser({
+    user:"netflix",pwd:"4linux",
+    roles:[
+    {role:"updateNetflix",db:"admin"}
+    ]
+})
+
+db.getUser("netflix")
+
+mongo -u netflix
+
+show collections
+
+db.filmes.find()
+
+db.filmes.update({"titulo":"TituloFilme18"},{"titulo":"ok"})
+
+db.filmes.insert({"teste":"ok"})

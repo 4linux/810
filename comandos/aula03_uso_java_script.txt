@@ -1,0 +1,24 @@
+
+## No shell linux
+// hello.js
+conn = new Mongo("mongodb://admin:4linux@localhost");
+db = conn.getDB("dexter");
+db.funcionarios.insert({"nome":"Jorge"});
+funcs = db.funcionarios.find();
+while(funcs.hasNext()){
+    printjson(funcs.next());
+}
+
+mongo -u admin -p 4linux hello.js
+
+mongo -u admin -p 4linux
+
+// No mongo shell 
+
+show dbs
+
+use dexter
+
+show collections
+
+db.funcionarios.find()

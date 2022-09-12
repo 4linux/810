@@ -1,0 +1,322 @@
+1 - Operação de gravação vinda da aplicação 
+2 - Gravação do journal que acontece a cada 100ms 
+3 - Informações do Journal para o Shared View gravar em disco 
+4 - Flush do Shared View para o discos no diretório definido pelo pathDB, via memory mapping 
+5 - Remap das informações do Shared para o Private View para manter o sincronismo das informações
+
+/******************************************/
+
+## Cache de filesystem 
+
+# https://www.mongodb.com/docs/manual/core/wiredtiger/
+
+free -h 
+
+dd if=/dev/zero of=/file.img bs=1M count=50
+
+free -h 
+
+sudo -i 
+
+echo 1 > /proc/sys/vm/drop_caches
+
+free -h 
+
+grep 'Pombo' /file.img 
+
+free -h 
+
+## Swap
+
+sysctl vm.swappiness
+
+sudo vim /etc/sysctl.d/memoria.conf
+vm.swappiness = 1
+
+sysctl -p /etc/sysctl.d/memoria.conf
+
+sysctl vm.swappiness 
+
+## RA (ReadAhed)
+
+https://www.mongodb.com/docs/manual/administration/production-notes/
+
+df -h 
+
+blockdev --getra /dev/sda1
+
+blockdev --setra 32 /dev/sda1
+
+// Para permanecer, deve-se criar uma entrada no systemctl 
+
+/*********** Profiling ***********/
+
+// A partir daqui, fazer em algum nó, no mongos 192.168.100.10 
+
+ls -lha /var/lib/mongo 
+
+systemctl stop mongod
+
+ls -lha /var/lib/mongo 
+
+rm -rf /var/lib/mongo/*
+
+//vim /etc/mongod.conf
+/******************************************/
+
+storage:
+  dbPath: /var/lib/mongo
+  journal:
+    enabled: true
+    commitIntervalMs: 50
+  directoryPerDB: true
+  syncPeriodSecs: 60
+  wiredTiger:
+    engineConfig:
+      cacheSizeGB: 0.25
+      directoryForIndexes: true
+    collectionConfig:
+      blockCompressor: zlib
+  
+net:
+  port: 27017
+  bindIp: 0.0.0.0  # Enter 0.0.0.0,:: to bind to all IPv4 and IPv6 addresses or, alternatively, use the net.bindIpAll setting.
+
+security:
+  authorization: enabled
+
+// Remover a parte de replica set 
+/******************************************/
+
+systemctl start mongod
+
+mongo
+
+use admin
+db.createUser(
+    {
+        user: "admin",
+        pwd: "4linux",
+        roles: ["root"]
+    }
+)
+
+exit 
+
+mongo -u admin 
+
+use dexter
+
+db.setProfilingLevel(2)
+
+show collections
+
+Math.random()
+
+Math.round(5.7)
+
+Math.round(Math.random())
+
+Math.round(Math.random()* 100000)
+
+/********** Importar os registros **********/
+
+mongo /vagrant/scripts/filmes.js
+
+mongo -u admin 
+
+use dexter
+
+db.filmes.find().count()
+
+var filmes_ano = db.filmes_ano.initializeUnorderedBulkOp();
+
+for (var i = 0; i<=1000000; i++) {
+  filmes_ano.insert({titulo:"TituloFilme"+i, "ano": i, "comentario_id": Math.round(Math.random()* 100000) })
+}
+
+filmes_ano.execute();
+
+db.filmes_ano.find();
+
+var filmes_comentario = db.filmes_comentario.initializeUnorderedBulkOp();
+
+for (var i = 0; i<=1000000; i++) {
+  filmes_comentario.insert({Comentario:"Gostei"+i,  "comentario_id": i })
+}
+
+filmes_comentario.execute();
+
+db.filmes_comentario.find();
+
+/********** Fim importação **********/
+
+db.system.profile.find().pretty()
+
+db.filmes.findOne()
+
+db.system.profile.find().pretty()
+
+db.setProfilingLevel(1, {slowns:20})
+
+db.system.profile.find().pretty()
+
+db.filmes_ano.aggregate([
+    { $match: {"titulo":"TituloFilme99"} },
+    {"$lookup":{
+        "from":"filmes_comentario",
+        "localField":"comentario_id",
+        "foreignField":"comentario_id",
+        "as":"comentarios"}}
+]).pretty()
+
+db.system.profile.find().sort( { "ts": -1 }).limit(4).pretty()
+
+db.setProfilingLevel(0)
+
+db.system.profile.find().pretty()
+
+db.system.profile.aggregate([ {$group: {"_id": "$ns", "total": {$sum: 1} }}  ]).pretty()
+
+db.system.profile.aggregate([ {$group: {"_id": "$ns", "nexec": {$sum: 1} ,"nmillis": { $sum: "$millis" } }}  ]).pretty()
+
+db.system.profile.find({"ns" : "dexter.filmes_comentario"})
+
+db.system.profile.find({"ns" : "dexter.filmes_comentario", "planSummary": "COLLSCAN" , "millis" : { $gte: 10}}).pretty()
+
+db.system.profile.find({"ns" : "dexter.filmes_ano", "planSummary": "COLLSCAN" } ).sort( { millis : -1 }).pretty()
+
+//db.system.profile.drop()
+
+cat /var/log/mongodb/mongod.log | grep COLLS 
+
+//********************************* INDICES *********************************//
+
+## Padrão EQR 
+# Equality
+# Sort
+# Range 
+
+## https://www.mongodb.com/docs/manual/reference/method/db.collection.createIndex/
+
+use dexter
+
+db.filmes_ano.find({ titulo: "TituloFilme18" }).explain()
+
+db.filmes_ano.find({ titulo: "TituloFilme99" }).explain('executionStats')
+
+db.filmes_ano.createIndex({titulo:1})
+
+db.filmes_ano.find({ titulo: "TituloFilme18" }).explain('executionStats')
+
+db.filmes_ano.getIndexes()
+
+db.filmes_ano.createIndex({ano:-1 },{ name: "IndiceDoSucesso"})
+
+db.filmes_ano.find({ ano: 2009 }).explain('executionStats')
+
+db.filmes_ano.getIndexes()
+
+db.filmes_ano.find({ ano: { $gt : 1000, $lt: 1000000} }).explain('executionStats')
+
+db.filmes_ano.find({ ano: { $gt : 1000, $lt: 1000000} , comentario_id: 5000}).explain('executionStats')
+
+db.filmes_ano.createIndex({ ano :1 , comentario_id : 1}, {name: "IndiceDoSucessoTotal"})
+
+db.filmes_ano.dropIndex("IndiceDoSucessoTotal")
+
+db.filmes_ano.createIndex({comentario_id :1,titulo:1 }, {name: "IndiceDoSucessoTotal"})
+
+db.filmes_ano.find({ ano: { $gt : 1000, $lt: 1000000} , comentario_id: 5000}).explain('executionStats')
+
+db.filmes_ano.find()
+
+db.filmes_ano.find( { "_id": ObjectId("624c57ae4c8369dc978274c6") } ).explain('executionStats')
+
+// Consultas com lookup
+
+db.filmes_ano.explain('executionStats').aggregate([
+    { $match: {"titulo":"TituloFilme99"} },
+    {"$lookup":{
+        "from":"filmes_comentario",
+        "localField":"comentario_id",
+        "foreignField":"comentario_id",
+        "as":"comentarios"}}
+])
+
+db.filmes_comentario.createIndex({ comentario_id : 1 }, {name: "IndiceDoCrime"})
+
+db.filmes_ano.explain('executionStats').aggregate([
+    { $match: {"titulo":"TituloFilme99"} },
+    {"$lookup":{
+        "from":"filmes_comentario",
+        "localField":"comentario_id",
+        "foreignField":"comentario_id",
+        "as":"comentarios"}}
+])
+
+// Covered Indexes 
+
+db.filmes_ano.find({ titulo: "teste" , comentario_id: 5000},{comentario_id :1,titulo:1 ,"_id" : 0}).explain('executionStats')
+
+// $ text -> Busca por aproximação -> No máximo 1 
+
+db.filmes.createIndex({ titulo: 'text'})
+
+db.filmes.stats()
+
+db.filmes.find({ $text : { $search : 'Potter Harry macaco'}},{titulo :1, _id:0})
+
+db.filmes.find({ $text : { $search : '"Harry Potter"'}},{titulo :1, _id:0})
+
+db.filmes.find({ $text : { $search : 'Harri Potter'}},{titulo :1, _id:0})
+
+db.filmes.find({ $text : { $search : 'Potter Harry macaco'}},{titulo :1, _id:0, score: { $meta: "textScore"}})
+
+db.filmes.find({ $text : { $search : 'Potter Harry macaco'}},{titulo :1, _id:0, score: { $meta: "textScore"}})
+
+db.filmes.find({ $text : { $search : 'Potter Harry macaco'}},{titulo :1, _id:0, score: { $meta: "textScore"}}).sort( { score: { $meta: "textScore"}})
+
+db.filmes.dropIndex('plot_text_fullplot_text')
+
+// ttl 
+
+// multikey 
+
+// sparse 
+
+db.filmes_ano.createIndex( {titulo: 1},{ unique: 1, name: "teste"})
+
+// Listar os índices 
+
+db.filmes_ano.aggregate( [ { $indexStats: { } } ] ).pretty()
+
+// Verificar a quantidade de acessos de cada índice
+
+var dc = db.adminCommand('listDatabases');
+
+for(var i = 0; i < dc.databases.length; i++) {
+ var db = db.getSiblingDB(dc.databases[i].name);
+
+ if (['admin', 'config', 'local'].indexOf(dc.databases[i].name) !== -1)
+   continue;
+
+ print('\n### ' + db + ' ###')
+ var cc = db.getCollectionNames();
+ for(var x = 0; x < cc.length; x++) {
+   var collection = cc[x];
+   try {
+     var ci = db[collection].aggregate( [ { $indexStats: { } } ] );
+     var show = true;
+     while(row = ci.next()) {
+       if (show) {
+         print(' - ' + collection);
+         show = false;
+       }
+       print('   - "' + row.name + '" (' + Object.keys(row.key) + ') - ' + row.accesses.ops);
+       //printbashon(row);
+     }
+   } catch(ex) {
+   }
+ }
+}

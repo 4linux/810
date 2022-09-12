@@ -1,0 +1,251 @@
+////// Existem 3 formas para o aggreation framework
+
+//// Aggregation Pipeline 
+
+//// MapReduce function
+
+//// Single Purpose Aggregation Operations 
+
+ps aux | grep mongo | awk  '{print $1}' | grep mongo
+
+// Na aula anterior deletamos alguns registros, então iremos fazer a carga novamente
+
+mongo -u admin 
+
+use dexter
+
+db.filmes.drop()
+
+// No shell do linux
+mongo /vagrant/scripts/filmes.js
+
+mongo -u admin
+
+// No shell do mongo 
+use dexter
+
+db.filmes.find().count()
+
+db.filmes.aggregate([
+    {"$match":{"ano":{"$lt":"2005","$gt":"2000"}}},
+    {"$sort":{ "ano":1} }
+]).pretty()
+
+db.filmes.aggregate([
+    {"$match":{"ano":{"$lt":"2005","$gt":"2000"}}},
+    { "$project" : { avaliacao: 0 }},
+    {"$sort":{ "ano":1} }
+])
+
+db.filmes.aggregate([
+    {"$match":{"ano":{"$lt":"2017","$gt":"2000"}}},
+    {"$group":{"_id":{"diretor":"$diretor"},"total":{"$sum":1}}}
+]).pretty()
+
+db.filmes.aggregate([
+    { "$match":{ "ano":{"$lt":"2017","$gt":"2000"},"diretor":"Quentin Tarantino"}},
+    { "$group":{"_id":{"diretor":"$diretor"},"total":{"$sum":1},
+        "filmes":{"$push":{"titulo":"$titulo","ano":"$ano"}}}}
+]).pretty()
+
+db.filmes.aggregate([ 
+    {$match: {"ano": {$gt: "2000"}}},
+    {$project: {"titulo": 1, "diretor": 1, "ano": 1, "_id": 0}}
+])
+
+db.filmes.aggregate([ 
+    {$match: {"ano": {$gt: "2000"}}},
+    {$project: {"titulo": 1, "diretor": 1, "ano": 1, "_id": 0}},
+    {$group: {"_id": "$ano", "total": {$sum: 1} }} 
+])
+
+db.filmes.aggregate([ 
+    {$match: {"ano": {$gt: "2000"}}},
+    {$project: {"titulo": 1, "diretor": 1, "ano": 1, "_id": 0}},
+    {$group: {"_id": "$ano", "total": {$sum: 1}}}, 
+    { $out: "filmesPorAno" }
+])
+
+db.filmesPorAno.find();
+
+#### Lookup
+
+// Collection de comentários sobre os filmes 
+
+db.comentarios.insert({
+    _id: 1,
+    "nome": "Richard Stallman",
+    "comentario":"Filme muito bom, mas dá pra explicar o final ?"
+})
+
+db.comentarios.insert({
+    _id: 2,
+    "nome": "Linux Torvalds",
+    "comentario":"Muito bom, filme incrível"
+})
+
+db.comentarios.insert({
+    _id: 3,
+    "nome": "Ada Lovelance",
+    "comentario":"Era melhor ter visto o filme do Pelé!"
+})
+
+db.comentarios.find();
+
+db.filmes.update(
+    {"titulo":"Interestelar"},
+    {"$addToSet":{"comentarios":
+        {"$each":[ 1 , 2 , 3] }}
+    }
+)
+
+db.filmes.find(
+    {"titulo":"Interestelar"}
+).pretty()
+
+db.filmes.aggregate([
+    { $match: {"titulo":"Interestelar"} },
+    {"$lookup":{
+        "from":"comentarios",
+        "localField":"comentarios",
+        "foreignField":"_id",
+        "as":"comentarios"}}
+]).pretty()
+
+db.filmes.aggregate([
+    {"$lookup":{
+        "from":"comentarios",
+        "localField":"comentarios",
+        "foreignField":"_id",
+        "as":"comentarios"}}
+]).pretty()
+
+db.filmes.aggregate([
+    { $match: {"titulo":"Interestelar"} },
+    {"$lookup":{
+        "from":"comentarios",
+        "localField":"comentarios",
+        "foreignField":"_id",
+        "as":"comentarios"}},
+    {"$unwind":"$comentarios"},
+]).pretty()
+
+//// MapReduce 
+
+// An aggregation pipeline provides better performance and usability than a map-reduce operation.
+// Starting in MongoDB 5.0, map-reduce is deprecated:
+// https://www.mongodb.com/docs/manual/tutorial/map-reduce-examples/
+// https://www.mongodb.com/docs/manual/core/map-reduce/
+
+db.collection.mapReduce(map(),reduce(),query:{},out:"");
+
+//// Onde
+
+// * map(): função Map escrita em JavaScript
+// * reduce(): função escrita em JavaScript
+// * query: busca inicial dos documentos na collection
+// * out: nome da collection de saída - opcional
+
+use contas
+
+db.operacoes.insert({Nome:{nome:'Julio', sobrenome:'Ballot'}, valor: 10, conta:'CC'})
+
+db.operacoes.insert({Nome:{nome:'Julio', sobrenome:'Ballot'}, valor: 70, conta:'CC'})
+
+db.operacoes.insert({Nome:{nome:'Ricardo', sobrenome:'Caeiro'}, valor: 130, conta:'P'})
+
+db.operacoes.insert({Nome:{nome:'Ricardo', sobrenome:'Caeiro'}, valor: 80, conta :'P'})
+
+db.operacoes.insert({Nome:{nome:'Yago', sobrenome:'Esquines'}, valor: 300, conta :'P'})
+
+db.operacoes.insert({Nome:{nome:'Yago', sobrenome:'Esquines'}, valor: 5000,conta:'CC'})
+
+db.operacoes.find()
+
+
+db.operacoes.mapReduce(
+    function(){
+        emit(this.Nome.nome, this.valor);
+    },
+    function(key,values){
+        return Array.sum(values);
+    },
+    {
+    query: {'Nome.nome':'Julio', conta:'CC'},
+        out: 'statusContaJulio'
+}
+)
+
+db.statusContaJulio.find()
+
+// Como seria com aggregate 
+
+db.operacoes.aggregate([
+    { $match: { "Nome.nome": "Julio" }},
+    { $group: { _id: "$Nome.nome", value: { $sum: "$valor" } } }
+])
+
+
+
+db.orders.insertMany([
+   { _id: 1, cust_id: "Ant O. Knee", ord_date: new Date("2020-03-01"), price: 25, items: [ { sku: "oranges", qty: 5, price: 2.5 }, { sku: "apples", qty: 5, price: 2.5 } ], status: "A" },
+   { _id: 2, cust_id: "Ant O. Knee", ord_date: new Date("2020-03-08"), price: 70, items: [ { sku: "oranges", qty: 8, price: 2.5 }, { sku: "chocolates", qty: 5, price: 10 } ], status: "A" },
+   { _id: 3, cust_id: "Busby Bee", ord_date: new Date("2020-03-08"), price: 50, items: [ { sku: "oranges", qty: 10, price: 2.5 }, { sku: "pears", qty: 10, price: 2.5 } ], status: "A" },
+   { _id: 4, cust_id: "Busby Bee", ord_date: new Date("2020-03-18"), price: 25, items: [ { sku: "oranges", qty: 10, price: 2.5 } ], status: "A" },
+   { _id: 5, cust_id: "Busby Bee", ord_date: new Date("2020-03-19"), price: 50, items: [ { sku: "chocolates", qty: 5, price: 10 } ], status: "A"},
+   { _id: 6, cust_id: "Cam Elot", ord_date: new Date("2020-03-19"), price: 35, items: [ { sku: "carrots", qty: 10, price: 1.0 }, { sku: "apples", qty: 10, price: 2.5 } ], status: "A" },
+   { _id: 7, cust_id: "Cam Elot", ord_date: new Date("2020-03-20"), price: 25, items: [ { sku: "oranges", qty: 10, price: 2.5 } ], status: "A" },
+   { _id: 8, cust_id: "Don Quis", ord_date: new Date("2020-03-20"), price: 75, items: [ { sku: "chocolates", qty: 5, price: 10 }, { sku: "apples", qty: 10, price: 2.5 } ], status: "A" },
+   { _id: 9, cust_id: "Don Quis", ord_date: new Date("2020-03-20"), price: 55, items: [ { sku: "carrots", qty: 5, price: 1.0 }, { sku: "apples", qty: 10, price: 2.5 }, { sku: "oranges", qty: 10, price: 2.5 } ], status: "A" },
+   { _id: 10, cust_id: "Don Quis", ord_date: new Date("2020-03-23"), price: 25, items: [ { sku: "oranges", qty: 10, price: 2.5 } ], status: "A" }
+])
+
+var mapFunction2 = function() {
+    for (var idx = 0; idx < this.items.length; idx++) {
+       var key = this.items[idx].sku;
+       var value = { count: 1, qty: this.items[idx].qty };
+       emit(key, value);
+    }
+};
+
+var reduceFunction2 = function(keySKU, countObjVals) {
+   reducedVal = { count: 0, qty: 0 };
+   for (var idx = 0; idx < countObjVals.length; idx++) {
+       reducedVal.count += countObjVals[idx].count;
+       reducedVal.qty += countObjVals[idx].qty;
+   }
+   return reducedVal;
+};
+
+var finalizeFunction2 = function (key, reducedVal) {
+  reducedVal.avg = reducedVal.qty/reducedVal.count;
+  return reducedVal;
+};
+
+db.orders.mapReduce(
+   mapFunction2,
+   reduceFunction2,
+   {
+     out: { merge: "map_reduce_example2" },
+     query: { ord_date: { $gte: new Date("2020-03-01") } },
+     finalize: finalizeFunction2
+   }
+ );
+
+db.map_reduce_example2.find().sort( { _id: 1 } ) 
+
+db.orders.aggregate( [
+   { $match: { ord_date: { $gte: new Date("2020-03-01") } } },
+   { $unwind: "$items" },
+   { $group: { _id: "$items.sku", qty: { $sum: "$items.qty" }, orders_ids: { $addToSet: "$_id" } }  },
+   { $project: { value: { count: { $size: "$orders_ids" }, qty: "$qty", avg: { $divide: [ "$qty", { $size: "$orders_ids" } ] } } } },
+   { $merge: { into: "agg_alternative_3", on: "_id", whenMatched: "replace",  whenNotMatched: "insert" } }
+] )
+
+db.agg_alternative_3.find()
+
+//// Single Pourpuse 
+
+db.statusContaJulio.find().count()
+
+db.statusContaJulio.distinct("value")

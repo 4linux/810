@@ -1,0 +1,17 @@
+
+1º Importar o applice
+2º Editar as redes ( Arquivo -> Gerenciador de redes do Hospedeiro [Host Network Manager]-> Adicionar a seguinte rede):
+    192.168.100.1  -> Para todas as máquinas (DHCP desabilitado)
+3º Editar as máquinas para o adaptador correto
+4º Iniciar a máquina mongos -> (Usuário: vagrant, senha: vagrant)
+
+############### Ips das máquinas #########
+
+mongos -> 192.168.100.10
+configsrv-01 -> 192.168.100.11 
+configsrv-02 -> 192.168.100.12
+sh0-01 -> 192.168.100.13
+sh0-02 -> 192.168.100.14
+sh1-01 -> 192.168.100.15
+sh2-02 -> 192.168.100.16
+monitoring -> 192.168.100.254

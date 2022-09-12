@@ -1,0 +1,174 @@
+
+########### Validação de documentos 
+
+##### Expressions
+
+##### jsonSchema 
+
+##### Não valida os existentes, apenas os próximos 
+
+use mercado 
+
+db.createCollection(
+    "livros",{validator:{$or:[
+    {"livro" : {$type: "string"}},
+    {"autor" : {$type: "string"}},
+    {"lancamento": {$regex: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"}},
+    {"genero" : {$in: ["ficcao","aventura","misterio"]}},
+    {"paginas":{$type: "number"}}
+]}})
+
+db.getCollectionInfos({"name":"livros"})
+
+// Falha porque o campo só aceita numero.
+db.livros.insert({"paginas":"200"})
+
+db.livros.insert({"paginas":"200","livro":"O Hobbit"})
+
+db.livros.insert({"genero":"acao"})
+
+db.livros.insert({"genero":"aventura"})
+
+// For deployments that have enabled access control, to bypass document validation, the authenticated user must have bypassDocumentValidation action
+// The built-in roles dbAdmin and restore provide this action. 
+
+db.runCommand({
+   insert: "livros",
+   documents: [ {paginas: "123"} ],
+   bypassDocumentValidation: true
+})
+
+db.runCommand({
+    collMod: "livros",
+    validator:{
+    $or:[{"paginas":{$exists: true}}]}
+    }
+)
+
+db.livros.insert({"genero":"acao"})
+
+db.livros.insert({"genero":"acao", "paginas":200})
+
+db.livros.insert({"paginas":"banana"})
+
+db.livros.find()
+
+db.livros.drop()
+
+db.createCollection(
+    "livros",{validator:{$and:[
+    {"livro" : {$type: "string"}},
+    {"autor" : {$type: "string"}},
+    {"lancamento": {$regex: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"}},
+    {"genero" : {$in: ["ficcao","aventura","misterio"]}},
+    {"paginas":{$type: "number"}}
+]}})
+
+db.livros.insert({"genero":"acao"})
+
+db.livros.insert({"genero":"aventura"})
+
+db.livros.insert(
+    { 
+        livro: "Tudo sobre NFTS",
+        autor: "Meu autor",
+        lancamento: "2021-01-01",
+        genero:"acao",
+        paginas: 100
+    }
+)
+
+db.livros.insert(
+    { 
+        livro: "Tudo sobre NFTS",
+        autor: "Meu autor",
+        lancamento: "2021-01-01",
+        genero:"aventura",
+        paginas: 100
+    }
+)
+
+db.livros.find()
+
+db.livros.drop()
+
+db.createCollection( "livros" , {
+    validator: {
+        $jsonSchema: {
+            bsonType: "object",
+            additionalProperties: true,
+    required: ["titulo","autor","lancamento","genero"],
+    properties: {
+    _id:{},
+
+    titulo: {
+    bsonType: "string",
+    description: "campo precisa ser do tipo string" },
+
+    autor: {
+    bsonType: "string",
+    description: "campo precisa ser do tipo string"
+    },
+
+    lancamento:{
+    bsonType: "string",
+    pattern: "[0-9]{4}-[0-9]{2}-[0-9]{2}",
+    description: "campo precisa ser string e no formato AAAA-MM-DD",
+    },
+
+    genero: {
+    enum: ["aventura","ficcao","misterio"],
+    description: "genero precisa estar entre aventura, ficcao e misterio",
+    },
+
+    paginas: {
+    bsonType: "double",
+    maximum: 5000,
+    minimum: 200,
+    description: "Campo precisa ser um interiro entre 200 e 5000"
+    }
+}}}})
+
+db.getCollectionInfos({"name":"livros"})
+
+db.livros.insert(
+    { 
+        titulo: "Tudo sobre NFTS",
+        autor: "Meu autor",
+        lancamento: "2021-01-01",
+        genero:"aventura",
+        paginas: 200
+    }
+)
+
+db.livros.insert(
+    { 
+        
+        autor: "Meu autor",
+        lancamento: "2021-01-01",
+        genero:"aventura",
+        paginas: 200
+    }
+)
+
+db.livros.insert(
+    { 
+        titulo: "Tudo sobre NFTS",
+        autor: "Meu autor",
+        lancamento: "2021-01-01",
+        genero:"aventura",
+        paginas: 200,
+        corCapa: "rosa" 
+    }
+)
+
+db.livros.find()
+
+### Obs!!
+• Não é possível criar validadores sobre as collections das bases admin, local e config.
+• Também não é possível criar validadores para collections que sejam de sistema, como system, por exemplo
+
+
+
+
+

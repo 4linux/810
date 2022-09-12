@@ -1,0 +1,205 @@
+// Mongodump
+// MongoExport - Import
+// Snapshot 
+// cp,rsync 
+
+// Criar um usuario dexter 
+use dexter
+db.createUser(
+    {
+        user: "dexter",
+        pwd: "4linux",
+        roles: ["root"]
+    }
+)
+
+db.getUsers()
+
+// Criar uma outra database para teste 
+
+use bddump
+
+var carga10 = db.carga10.initializeUnorderedBulkOp();
+
+for (var i = 0; i<=10000; i++) {
+  carga10.insert({titulo:"TituloFilme"+i, "ano": i, "comentario_id": Math.round(Math.random()* 100000) })
+}
+
+carga10.execute();
+
+var carga100 = db.carga100.initializeUnorderedBulkOp();
+
+for (var i = 0; i<=100000; i++) {
+  carga100.insert({titulo:"TituloFilme"+i, "ano": i, "comentario_id": Math.round(Math.random()* 100000) })
+}
+
+carga100.execute();
+
+var carga500 = db.carga500.initializeUnorderedBulkOp();
+
+for (var i = 0; i<=500000; i++) {
+  carga500.insert({titulo:"TituloFilme"+i, "ano": i, "comentario_id": Math.round(Math.random()* 100000) })
+}
+
+carga500.execute();
+
+mongodump --help
+
+mongodump 
+
+mongodump -u admin -p4linux
+
+ls 
+
+du -sh * 
+
+ls -lha dump/
+
+rm -rf dump/
+
+time mongodump -u admin -p4linux -o dumps/padrao
+
+time mongodump -u admin -p4linux -o dumps/gzip --gzip
+
+ls -lha dumps/gzip/admin/
+
+du -sh dumps/*
+
+time mongodump -u admin -p4linux -o dumps/parallel -j2 --gzip
+
+time mongodump -u admin -p4linux --gzip --archive=dumps/archive.gz
+
+time mongodump -u admin -p 4linux --archive | gzip -9 > dumps/gzip_extreme.gz
+
+time mongodump -u admin -p 4linux --archive | bzip2 > dumps/bzip.bz
+
+time mongodump -u admin -p4linux --archive=dumps/dump.bson
+
+du -sh dumps/*
+
+// 1TB (com índices) -> 24 horas dump/restore 
+
+cat padrao/dexter/filmes_ano.metadata.json
+
+/ *********** Preparar instância para o restore *********** /
+
+sudo -i
+
+cp /etc/mongod.conf /etc/mongod_restore.conf
+
+vim /etc/mongod_restore.conf
+
+## Trocar a porta para 27018
+net:
+  port: 27018
+
+## Trocar o arquivo de log 
+systemLog:
+  destination: file
+  logAppend: true
+  path: /var/log/mongodb/mongod_restore.log
+
+## Trocar o diretório de dados
+storage:
+  dbPath: /var/lib/mongo_restore
+
+## Trocar o arquivo de pid 
+processManagement:
+  fork: true  # fork and run in background
+  pidFilePath: /var/run/mongodb/mongod_restore.pid  # location of pidfile
+
+## Criar o diretório de dados
+mkdir /var/lib/mongo_restore
+chown mongod: /var/lib/mongo_restore/
+
+## Desabilitar as opções de segurança
+#security:
+#  authorization: enabled
+
+cp /usr/lib/systemd/system/mongod.service /usr/lib/systemd/system/mongod_restore.service
+
+Environment="OPTIONS=-f /etc/mongod_restore.conf"
+PIDFile=/var/run/mongodb/mongod_restore.pid
+
+systemctl daemon-reload
+
+systemctl start mongod_restore
+
+/ *********** Fim *********** /
+
+## 27017 -> Original 
+## 27018 -> restore 
+
+mongo -u admin -p 4linux # Original 
+mongo  --port 27018 # Restore 
+
+mongorestore --help 
+
+time mongorestore --port 27018 --drop --bypassDocumentValidation --dir=dumps/padrao
+
+mongo --port 27018 -u admin 
+
+use admin 
+
+db.getUsers()
+
+use dexter 
+
+db.getUsers()
+
+time mongorestore --port 27018 --drop --bypassDocumentValidation --archive=dumps/dump.gz
+
+time mongorestore --port 27018 --drop --bypassDocumentValidation --archive=dumps/dump.gz --gzip
+
+time mongorestore --port 27018 --drop --bypassDocumentValidation --nsInclude='dexter.*' --authenticationDatabase=admin --dir=dumps/padrao
+
+time mongorestore --port 27018 --drop --bypassDocumentValidation --nsInclude='dexter.*' --nsExclude='dexter.*ano' --dir=dumps/padrao
+
+time mongorestore --port 27018 --drop --bypassDocumentValidation --nsFrom='bddump.*' --nsTo='bddump_hmp.*' --dir=dumps/padrao
+
+mongoexport --help
+
+mongoexport 
+
+time mongoexport -u admin -p 4linux --authenticationDatabase=admin -d dexter -c filmes
+
+time mongoexport -u admin -p 4linux --authenticationDatabase=admin -d dexter -c filmes -o export.json
+
+vim export.csv
+
+time mongoexport -u admin -p 4linux --authenticationDatabase=admin -d dexter -c filmes --limit 10 -o export.json
+
+time mongoexport -u admin -p 4linux --authenticationDatabase=admin -d dexter -c filmes --fields='titulo,diretor' -o export.json
+
+time mongoexport -u admin -p 4linux --authenticationDatabase=admin -d dexter -c filmes --fields='titulo,diretor' -t csv -o export.csv
+
+time mongoexport -u admin -p 4linux --authenticationDatabase=admin -d dexter -c filmes_ano --limit 100 -o filmes_ano.json
+
+head filmes_ano.json
+
+time mongoexport -u admin -p 4linux --authenticationDatabase=admin -d dexter -c filmes_ano --jsonFormat=canonical --limit 100 -o filmes_ano_canonical.json
+
+head filmes_ano_canonical.json
+
+vim migracao_relacional.csv
+Nome, Idade, Naturalidade, EstadoCivil
+Jose, 25, Brasilia-DF, Solteiro
+Josefina, 38, Parati-RJ, Solteiro
+Valdisney, 40, Vitoria-ES, Solteiro
+Antonio Silveira, 18, Salvador-BA, Solteiro
+
+mongoimport 
+
+mongoimport --help
+
+mongoimport --port 27018 -d restore --file migracao_relacional.csv --type csv --fields="Nome, Idade, Naturalidade, EstadoCivil"
+
+mongo --port 27018
+
+use migracao
+
+show collections
+
+db.migracao_relacional.find()
+
+mongoimport --port 27018 -d restore -c filmes_ano --file filmes_ano_canonical.json

@@ -1,0 +1,40 @@
+## shell linux 
+mongo -u admin 
+
+## mongo shell
+x = 10 
+x 
+x / 2 
+
+function quadrado(x) {
+   valor = Math.pow(x,2);
+   return valor; 
+}
+
+quadrado(2)
+
+use lojas
+
+db.fornecedores.insert({nome:"Bic", material:"canetas", quantidade:500})
+
+show collections
+
+db.fornecedores.find().pretty()
+
+show collections
+
+db.createCollection("clientes")
+
+show collections
+
+db.clientes.find()
+
+## Valor de size está em bytes. 
+db.createCollection("cap",{capped:true,size:4096})
+
+## Para casa: 
+• Crie uma base de dados fictícia de nome Mercado
+• Crie uma collection Produtos
+• Crie documentos com os campos: nome, descricao, preco, qtd, marca
+
+

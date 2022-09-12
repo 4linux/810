@@ -1,0 +1,249 @@
+// Replica Set 
+// Liberar o mongodb para escutar em todos os ips, ou no ip que seja visível aos demais
+// Addicionar um nome para a replicação ( Pode ser qualquer um! )
+
+sudo vim /etc/mongod.conf 
+
+/*******************************************/ 
+
+net:
+  port: 27017
+  bindIp: 0.0.0.0
+
+#security:
+#  authorization: enabled
+
+replication:
+  replSetName: repl00
+
+/*******************************************/ 
+
+sudo systemctl restart mongod
+
+// Realizar o procedimento acima nas 3 máquinas. 
+
+// Servidor 192.168.100.10
+
+rs.status()
+
+rs.initiate({_id:'repl00',members:[{_id:0,host:"192.168.100.10"}]})
+
+// repl00:SECONDARY> 
+// repl00:PRIMARY>
+
+rs.add("192.168.100.11")
+rs.add("192.168.100.12")
+
+
+rs.status()
+
+rs.slaveOk()
+
+rs.secondaryOk()
+
+rs.config()
+
+rs.reconfig()
+
+// priority: prioridade do nó em se tornar primário
+// hidden: especifica se esse servidor será oculto ou não
+// votes: número de votos durante a eleição do primário – peso
+// slaveDelay: especifica a quantidade de tempo para cópia do oplog
+
+var config = rs.config()
+
+config.members[0]
+
+config.members[0].priority = 10
+config.members[1].priority = 0.5
+config.members[2].priority = 0.5
+
+rs.reconfig(config)
+
+db.printReplicationInfo()
+
+db.printSlaveReplicationInfo()
+
+db.printSecondaryReplicationInfo()
+
+use local
+
+show collections 
+
+db.oplog.rs.find()
+
+/************ Estados de uma réplica ***************************/
+
+STARTUP
+Not yet an active member of any set. All members start up in this state. The mongod parses the replica set configuration document while in STARTUP.
+
+PRIMARY
+The member in state primary is the only member that can accept write operations. Eligible to vote.
+
+SECONDARY
+A member in state secondary is replicating the data store. Eligible to vote.
+
+RECOVERING
+Members either perform startup self-checks, or transition from completing a rollback or resync. Data is not available for reads from this member. Eligible to vote.
+
+STARTUP2
+The member has joined the set and is running an initial sync. Eligible to vote.
+
+NOTE
+Starting in MongoDB 5.0, if the member was newly added to the replica set, it is not eligible to vote and cannot be elected during the initial sync process.
+
+UNKNOWN
+The member's state, as seen from another member of the set, is not yet known.
+
+ARBITER
+Arbiters do not replicate data and exist solely to participate in elections. Eligible to vote.
+
+DOWN
+The member, as seen from another member of the set, is unreachable.
+
+ROLLBACK
+This member is actively performing a rollback. Eligible to vote. Data is not available for reads from this member.
+
+Starting in version 4.2, MongoDB kills all in-progress user operations when a member enters the ROLLBACK state.
+
+REMOVED
+This member was once in a replica set but was subsequently removed.
+
+/*****************************************************/
+
+// Como fazer uma manutenção na master
+
+rs.stepDown() 
+
+use admin
+
+db.shutdownServer()
+
+// https://www.mongodb.com/docs/manual/tutorial/enforce-keyfile-access-control-in-existing-replica-set/
+
+//////////// Ativando a replicação com senha
+
+// 1º Parar todos os servidores 
+
+sudo -i 
+
+openssl rand -base64 756 > /var/lib/mongo/mongo.key
+
+chown mongod: /var/lib/mongo/mongo.key
+
+chmod 400 /var/lib/mongo/mongo.key
+
+/************* Chave de exemplo  *************/
+9+O3svR+Js1+lKZjcEuo3jWbZh0mhr9QNxp4gk4ZZCB5hPjmrQezEs6JUjmTFrzd
+Yea1/KX8SEDMuRdBCcMUxwmZrdwgRb2a5lBPkpx9yn3qPn5OYNGpQMPuUIVzFZn1
+GGZ9CISPXercUz3QthPseBeFp52NnD7g98QFbvjMpAk+eC07v3NpCO0cVXGS7BEm
+e/5zi1lOkVmoUUB4vn3W7S4nM8rk9TScp3xfg9VsL0TzXCqQUkk16wDjl9NU+Y1S
+c9RmmeoNCCx/J66y4X6zh3inHZr9yRltTvy7RE+TbQQF+vFfrVvcXjP9kPbTUHuv
+97WDMnUmzRb+Rf6EURxmzDxseO/JVdVNaVxdGHJ/Qk0rX+4w8ja5QobOWzj2g5Hf
+7Zy5vryc+XuXQdlzH2ncLYMmsH1g2fDkJoFmLKaj6g+dSZmwNOeRHNBTjSOaVUVo
+znYbxp0rppvfHs47UbqgYjIWAC9T2MycibOkcvbV1dxL62YoxFJU8Ah1eSkbXbGG
+IfZYbiwC4SNA+A5GGOUnHvNj8zq/QeWEnyASr8GjJd4/d4zJxTPXxkCCoPyuS5LY
+BeCAx74uU943Eb5ytu1tMy0Vw7YQXLW1p0HAL748HcHVYXj227cQnUTD2N8TJnWU
+/OIb2kszE86H0plG+GM2XMuIGlL+1J2UfxEYuWPhQ9CzEx5oCcPbduBPUK7Fph7j
+KN8fxYDHC9lspeZfSTjWTlV569l9sejHqCR8pET6sQFXKbsqFojpOj6s8FtU74qa
+lok1jXbREDxTnTfKaqoqiuJzdZGsqHM7lXqgSNnpquYlUgjrBmu6KGpVjWRxA5gs
+j6/PPAxVeQ2c6KrvSENmuQYtYlwi/xXJDpb04bTfNxL6VY8P9607bs1NwtAtZGhf
+CRX/WLnyBcMcwNHoDF7K4Q6olo1J36zhsNDmFNbqzK35HjaPV2Of/36TjEC1/jYD
+dbaVvMXoPRS3+Z1kv7E0pyyZeDAD3VpIlRoNNpXuXLI2Msoj
+/************* Chave de exemplo  *************/
+
+sudo vim /etc/mongod.conf
+
+security:
+  keyFile: /var/lib/mongo/mongo.key
+
+/// Iniciar os 3 servidores
+sudo systemctl start mongod
+
+rs.remove("192.168.100.12:27017")
+
+rs.status()
+
+rs.addArb("192.168.100.12:27017")
+
+rs.status()
+
+rs.conf()
+
+// Arbitro 
+rs.slaveOk()
+
+show dbs
+
+sudo ls -lha /var/lib/mongo/
+
+tail -f /var/log/mongodb/mongod.log
+
+/// Habilitando uma replicação escondida 
+
+var config = rs.config()
+
+config.members[1]
+config.members[1].hidden = true
+config.members[1].priority = 0
+
+rs.reconfig(config)
+
+// Replicas com delay 
+
+// https://www.mongodb.com/docs/manual/core/replica-set-delayed-member/
+
+// Requisitos 
+Must be priority 0 members. Set the priority to 0 to prevent a delayed member from becoming primary.
+Must be hidden members. Always prevent applications from seeing and querying delayed members.
+Do vote in elections for primary, if members[n].votes is set to 1. Ensuring that delayed members are non-voting by setting members[n].votes to 0 can help improve performance.
+
+// Observações
+Delayed members copy and apply operations from the source oplog on a delay. When choosing the amount of delay, consider that the amount of delay:
+
+must be equal to or greater than your expected maintenance window durations.
+must be smaller than the capacity of the oplog. For more information on oplog size, see Oplog Size.
+
+// Valor está em segundos
+var config = rs.config()
+config.members[1]
+config.members[1].hidden = true
+config.members[1].priority = 0
+config.members[1].slaveDelay = 120
+rs.reconfig(config)
+
+// Testando a replica com delay 
+
+use cargaReplica
+
+for (var i=100000; i--;){ db.teste.insertOne({ valor : i }) }
+
+db.printReplicationInfo()
+
+// No servidor 192.168.100.12 
+
+use cargaReplica
+db.teste.find()
+
+// Sobre o OP log 
+// Storage Engine | Default Oplog Size | Lower Bound | Upper Bound
+// In-Memory Storage Engine | 5% of physical memory | 50 MB | 50 GB
+// WiredTiger Storage Engine | 5% of free disk space | 990 MB | 50 GB
+
+// New in version 4.4: Starting in MongoDB 4.4, you can specify the minimum number of hours to preserve an oplog entry. The mongod only truncates an oplog entry if:
+// The oplog has reached the maximum configured size, and
+// The oplog entry is older than the configured number of hours based on the host system clock.
+// By default MongoDB does not set a minimum oplog retention period and automatically truncates the oplog starting with the oldest entries to maintain the configured maximum oplog size.
+
+use local
+db.oplog.rs.stats().maxSize
+
+// Valor em MB 
+db.adminCommand({replSetResizeOplog: 1, size: Double(16000)})
+
+// Starting in MongoDB v4.4, a replica set member can replicate oplog entries while the compact operation is ongoing. Previously, oplog replication would be paused during compaction. Because of this, it was recommended that oplog compaction only be performed during maintenance windows, where writes could be minimized or stopped. In MongoDB 4.4 and later, it is no longer necessary to limit compaction operations on the oplog to maintenance windows, as oplog replication can continue as normal during compaction.
+// Do not run compact against the primary replica set member. Connect a mongo shell directly to the primary (not the replica set) and run rs.stepDown(). If successful, the primary steps down. From the mongo shell, run the compact command on the now-secondary member.
+// The following operation runs the compact command against the oplog.rs collection:
+
+use local
+db.runCommand({ "compact" : "oplog.rs" } )

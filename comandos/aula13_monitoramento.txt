@@ -1,0 +1,132 @@
+########### Sobre o log do mongodb ########### 
+
+tail -f /var/log/mongodb/mongod.log
+
+## https://www.percona.com/blog/2018/09/27/automating-mongodb-log-rotation/
+
+ls /var/log/mongodb/mongod* -lh 
+
+ls /etc/logrotate.d/
+
+mongo -u admin -p 4linux 
+
+db.adminCommand({logRotate: 1})
+
+kill -l 
+
+ls -lha /var/log/mongodb/
+
+ps -ef | grep mongod
+
+kill -SIGUSR1 {pid}
+
+ls -lha /var/log/mongodb/
+
+## vim /etc/mongod.conf 
+systemLog:
+  destination: file
+  logAppend: true
+  logRotate: reopen
+  path: /var/log/mongodb/mongod.log
+
+systemctl restart mongod
+
+## /etc/logrotate.d/mongod.conf
+/var/log/mongodb/mongod.log {
+  daily
+  size 100M
+  rotate 10
+  missingok
+  compress
+  delaycompress
+  notifempty
+  create 640 mongod mongod
+  sharedscripts
+  postrotate
+    /bin/kill -SIGUSR1 `cat /var/run/mongodb/mongod.pid 2>/dev/null` >/dev/null 2>&1
+  endscript
+}
+
+logrotate -f /etc/logrotate.d/mongod.conf
+
+ls -lha /var/log/mongodb/
+
+##################### Monitoramento Gratuito #####################
+
+db.enableFreeMonitoring()
+
+https://cloud.mongodb.com/freemonitoring/cluster/4LQ7IF7V4NP6JICHZ5LHPUJNLQSFHRQJ
+
+db.getFreeMonitoringStatus()
+
+db.disableFreeMonitoring()
+
+##################### Monitoramento Pontual #####################
+
+mongostat -u admin -p 4linux --authenticationDatabase admin
+
+mongotop -u admin -p 4linux --authenticationDatabase admin
+
+##################### Monitoramento Contínuo #####################
+
+## https://blog.4linux.com.br/prometheus-monitoramento-foco-servicos/#:~:text=Uma%20das%20caracter%C3%ADsticas%20que%20destacam,mais%20relacionadas%20a%20recursos%20de
+
+## Configurando o nó 192.168.100.10
+mongo -u admmin 
+use admin 
+db.createUser( {
+  user: "mongodb_exporter",
+  pwd: "admin",
+  roles: [{ role: "clusterMonitor", db: "admin"} ,{ role: "read", db: "local"}]
+}
+)
+
+sudo vim /etc/systemd/system/mongodb_exporter.service
+[Service]
+Type=simple
+User=mongod
+Group=mongod
+EnvironmentFile=/etc/default/mongodb_exporter
+ExecStart=/usr/local/sbin/mongodb_exporter --collect.database --collect.indexusage --collect.topmetrics
+
+sudo vim /etc/default/mongodb_exporter
+MONGODB_URI='mongodb://mongodb_exporter:admin@localhost:27017'
+
+sudo systemctl daemon-reload
+sudo systemctl stop mongodb_exporter
+sudo systemctl start mongodb_exporter
+sudo systemctl status mongodb_exporter
+
+http://192.168.100.10:9216/metrics  --> Exporter do mongodb 
+http://192.168.100.10:9100/metrics  --> Exporter da máquina
+
+## Configurando o Prometheus 192.168.100.254
+
+vim /etc/prometheus/prometheus.yml 
+
+docker ps
+
+docker run -dti --name prometheus -v /etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml -p 9090:9090 --restart always prom/prometheus
+
+docker run -dti --name grafana -p 3000:3000 --restart always grafana/grafana
+
+http://192.168.100.254:9090/ -> Prometheus 
+http://192.168.100.254:3000/ -> Grafana admin / admin  
+
+## Pesquisar
+mongodb_connections
+mongodb_mongod_db_data_size_bytes
+
+## Grafana 
+Configuration -> Datasources 
+
+http://192.168.100.254:9090
+
+## Baixar dashboard
+https://grafana.com/grafana/dashboards/
+https://grafana.com/grafana/dashboards/2583
+
+## Import do node 
+
+https://grafana.com/grafana/dashboards/11074
+

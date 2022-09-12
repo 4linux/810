@@ -1,0 +1,75 @@
+cat /etc/yum.repos.d/mongodb-org-4.4.repo
+
+systemctl status mongod
+
+cat /usr/lib/systemd/system/mongod.service
+
+mongo 
+
+## mongo shell
+show dbs 
+
+show collections
+
+db.system.version.find()
+
+use admin
+db.createUser(
+    {
+        user: "admin",
+        pwd: "4linux",
+        roles: ["root"]
+    }
+)
+
+## shell linux 
+sudo vim /etc/mongod.conf
+## Adicionar a seguinte linha
+security:
+  authorization: enabled
+
+sudo systemctl restart mongod
+
+systemctl status mongod
+
+mongo -u admin
+
+mongo -u admin -p 4linux
+
+## mongo shell
+show dbs 
+
+help 
+
+use admin
+
+show users 
+
+help admin 
+
+pwd()
+
+hostname()
+
+getMemInfo()
+
+show dbs 
+
+show collections 
+
+use funcionarios 
+
+db.analistas.insertOne( {
+    "name": "Pedro",
+    "cargo": "Analista de Sistemas Jr" 
+} )
+
+show collections 
+
+show dbs 
+
+## shell linux 
+
+sudo -i 
+
+cd /var/lib/mongo/

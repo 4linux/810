@@ -1,0 +1,180 @@
+############## Cold Backups ##############
+
+vim script.sh 
+#################### Inicio Script ####################
+#!/bin/bash  
+
+for X in {1..999999}; do  
+  echo "db=db.getSiblingDB('teste_stress');db.stress.insertOne( { chave : ${X}});"  | mongo -u admin -p4linux --quiet &  
+  if [ $(($X % 1)) == 0 ]; then  
+      wait  
+  fi  
+done  
+
+wait
+
+#################### Fim Script ####################
+
+chmod +X script.sh
+
+sh script.sh 
+
+mongo -u admin -p
+
+// bloqueios contra escrita: 
+db.fsyncLock() 
+
+db.fsyncLock() 
+
+use dexter 
+
+db.filmes.find() 
+
+use teste 
+
+db.createCollection('Shablau')
+
+db.currentOp()
+
+db.fsyncUnlock() 
+
+## Parar o servidor de restore
+
+sudo systemctl stop mongod_restore
+
+sudo rm -rf /var/lib/mongo_restore/*
+
+sudo rsync -avh /var/lib/mongo/ /var/lib/mongo_restore
+
+sudo du -sh /var/lib/mongo*
+
+mongo -u admin -p 4linux --eval="db.fsyncUnlock()"
+
+sudo systemctl start mongod_restore
+
+mongo --port 27018
+
+use admin
+db.getUsers()
+
+use dexter
+
+db.filmes_ano.find().count()
+
+use teste_stress
+db.stress.find().count()
+
+############## Hot Backups ##############
+# snapshot 
+# xfs, ext4 
+# zfs, btrfs 
+# LVM 
+
+# Logical Volume Manager
+### Armazenados de forma lógica 
+
+# https://blog.4linux.com.br/hot-backups-com-snapshot-de-disco/
+
+##### Passos
+# 1. Desligar a máquina
+# 2. Clicar com o botão direito na máquina
+# 3. Clicar em Configurações 
+# 4. Clicar em Armazenamento 
+# 5. Adicionar disco Rígido (Ultima opção na controladora)
+# 6. Criar 
+# 7. Tipo: VDI 
+# 8. Dinamicamente Alocado 
+# 9. Defina um local de armazenamento e tamanho (5GB)
+# 10. Clique em criar 
+# 11. Selecione o Disco
+# 12. Clique em Ok
+# 13. Suba a instância 
+
+sudo -i 
+
+lsblk 
+
+dnf install -y lvm2 
+
+cd /etc/yum.repos.d/
+
+sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+
+dnf install -y lvm2 
+
+# pvs 
+# lvs 
+# vgs 
+
+pvcreate /dev/sdb 
+
+pvs 
+
+pvdisplay
+
+vgcreate mongo /dev/sdb 
+
+vgdisplay
+
+lvcreate -n data -L 2g mongo
+
+ls /dev/mapper/mongo-data -l
+
+ls /dev/mongo/data -l
+
+mkfs.xfs /dev/mongo/data
+
+mount /dev/mongo/data /mnt
+
+ls /mnt
+
+ls /var/lib/mongo 
+
+grep -i dbpath /etc/mongod.conf 
+
+systemctl stop mongod 
+
+mv /var/lib/mongo/* /mnt 
+
+umount /mnt 
+
+mount /dev/mongo/data /var/lib/mongo 
+
+df -h 
+
+ls -lha /var/lib/mongo 
+
+ls -ld /var/lib/mongo 
+
+chown mongod: /var/lib/mongo 
+
+systemctl start mongod 
+
+mongo -u admin -p 4linux
+
+show dbs 
+
+lvcreate --name snap -L 512M --snapshot /dev/mongo/data
+
+mount -o nouuid /dev/mongo/snap /mnt/
+
+## Parar a instância de restore
+
+sudo systemctl stop mongod_restore
+
+sudo rm -rf /var/lib/mongo_restore/*
+
+ls -lha /var/lib/mongo_restore
+
+sudo rsync -avh --progress /mnt/ /var/lib/mongo_restore/
+
+lvs
+
+systemctl start mongod_restore
+
+mongo --port 27018
+
+use teste_stress
+db.stress.find().count()
+
